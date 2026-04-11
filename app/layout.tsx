@@ -7,8 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'JEE Prep Library - Master Physics with Structured Quizzes',
+  description: 'Interactive physics quiz platform for JEE preparation. Chapter-wise quizzes from HCV, Irodov, and more with performance tracking and leaderboards.',
   generator: 'v0.app',
   icons: {
     icon: [
