@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase';
 import { QuizJSON } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabaseClient();
     const { quizJson } = await req.json();
 
     // Validate the JSON structure

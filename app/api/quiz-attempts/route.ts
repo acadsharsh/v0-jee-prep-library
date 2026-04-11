@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase';
 import { jwtDecode } from 'jwt-decode';
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabaseClient();
     const { quizId, score, timeTakenSeconds } = await req.json();
 
     // Get the user from auth header

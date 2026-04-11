@@ -22,6 +22,12 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      if (!supabase) {
+        setError('Supabase not initialized');
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,

@@ -38,6 +38,12 @@ export default function SignupPage() {
     }
 
     try {
+      if (!supabase) {
+        setError('Supabase not initialized');
+        setIsLoading(false);
+        return;
+      }
+
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,

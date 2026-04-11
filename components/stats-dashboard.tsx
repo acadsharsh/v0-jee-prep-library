@@ -24,7 +24,7 @@ export function StatsDashboard() {
 
   useEffect(() => {
     const loadStats = async () => {
-      if (!user) return;
+      if (!user || !supabase) return;
 
       try {
         const { data: attempts } = await supabase

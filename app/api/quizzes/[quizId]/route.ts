@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase';
 import { QuizJSON } from '@/lib/types';
 
 export async function GET(
@@ -7,6 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ quizId: string }> }
 ) {
   try {
+    const supabase = getSupabaseClient();
     const { quizId } = await params;
 
     const { data: quiz, error } = await supabase

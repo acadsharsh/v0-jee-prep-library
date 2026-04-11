@@ -35,6 +35,11 @@ export default function DashboardPage() {
 
     const loadAttempts = async () => {
       try {
+        if (!supabase) {
+          setIsLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase
           .from('quiz_attempts')
           .select('id, quiz_id, score_percentage, created_at, quizzes(title)')
