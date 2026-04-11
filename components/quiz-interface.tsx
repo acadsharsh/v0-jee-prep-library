@@ -1,257 +1,196 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { QuizJSON } from '@/lib/types';
-import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 
-interface QuizInterfaceProps {
-  quiz: QuizJSON;
-  quizId: string;
-  onSubmit: (answers: { [key: string]: string }, timeTaken: number) => Promise<void>;
-}
+interface QuizInterfaceProps { quiz: QuizJSON; quizId: string; onSubmit: (answers: {[k:string]:string}, timeTaken:number) => Promise<void>; }
 
 export function QuizInterface({ quiz, quizId, onSubmit }: QuizInterfaceProps) {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<{ [key: string]: string }>({});
-  const [revealed, setRevealed] = useState<{ [key: string]: boolean }>({});
-  const [timeRemaining, setTimeRemaining] = useState(quiz.questions.length * 2 * 60);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [cur, setCur] = useState(0);
+  const [answers, setAnswers] = useState<{[k:string]:string}>({});
+  const [revealed, setRevealed] = useState<{[k:string]:boolean}>({});
+  const [timeLeft, setTimeLeft] = useState(quiz.questions.length * 2 * 60);
+  const [submitting, setSubmitting] = useState(false);
+  const [start] = useState(Date.now());
 
   useEffect(() => {
-    const t = setInterval(() => setTimeRemaining(p => Math.max(0, p - 1)), 1000);
+    const t = setInterval(() => setTimeLeft(p => Math.max(0, p-1)), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const q = quiz.questions[currentQuestion];
+  const q = quiz.questions[cur];
   const sel = answers[q.id];
   const isRev = revealed[q.id];
   const isCorr = sel === q.correctOptionId;
-  const answeredCount = Object.keys(answers).length;
-  const correctCount = Object.entries(answers).filter(
-    ([id, ans]) => quiz.questions.find(x => x.id === id)?.correctOptionId === ans
-  ).length;
+  const correct = Object.entries(answers).filter(([id,a]) => quiz.questions.find(x=>x.id===id)?.correctOptionId===a).length;
+  const fmt = (s:number) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
+  const isLow = timeLeft < 300;
+  const pct = Math.round(((cur+1)/quiz.questions.length)*100);
 
-  const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
-  const isLow = timeRemaining < 300;
+  const select = (id:string) => { if (isRev) return; setAnswers(p=>({...p,[q.id]:id})); };
+  const check = () => { if (!sel) return; setRevealed(p=>({...p,[q.id]:true})); };
+  const next = () => { if (cur < quiz.questions.length-1) setCur(p=>p+1); };
+  const prev = () => { if (cur > 0) setCur(p=>p-1); };
+  const finish = async () => { setSubmitting(true); await onSubmit(answers, Math.floor((Date.now()-start)/1000)); setSubmitting(false); };
 
-  const handleSelect = (optId: string) => { if (isRev) return; setAnswers(p => ({ ...p, [q.id]: optId })); };
-  const handleCheck = () => { if (!sel) return; setRevealed(p => ({ ...p, [q.id]: true })); };
-  const handleNext = () => { if (currentQuestion < quiz.questions.length - 1) setCurrentQuestion(p => p + 1); };
-  const handlePrev = () => { if (currentQuestion > 0) setCurrentQuestion(p => p - 1); };
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    await onSubmit(answers, Math.floor((Date.now() - startTime) / 1000));
-    setIsSubmitting(false);
+  const optClass = (id:string) => {
+    const isSel = sel===id; const isC = id===q.correctOptionId;
+    if (!isRev) return isSel ? 'opt-selected' : 'opt-default';
+    if (isC) return 'opt-correct';
+    if (isSel) return 'opt-wrong';
+    return 'opt-dim';
   };
 
-  const optStyle = (optId: string) => {
-    const isSel = sel === optId;
-    const isC = optId === q.correctOptionId;
-    if (!isRev) {
-      if (isSel) return { border: '1px solid var(--acc)', background: 'var(--acc-dim)', color: 'var(--tx-1)' };
-      return { border: '1px solid var(--border)', background: 'var(--bg-2)', color: 'var(--tx-2)' };
-    }
-    if (isC) return { border: '1px solid var(--green)', background: 'var(--green-dim)', color: 'var(--tx-1)' };
-    if (isSel) return { border: '1px solid var(--red)', background: 'var(--red-dim)', color: 'var(--tx-1)' };
-    return { border: '1px solid var(--border)', background: 'transparent', color: 'var(--tx-3)' };
-  };
-
-  const bubbleStyle = (idx: number) => {
+  const bubbleColor = (idx:number) => {
     const bq = quiz.questions[idx];
-    if (idx === currentQuestion) return { background: 'var(--acc)', color: '#fff', border: '1px solid var(--acc)' };
+    if (idx===cur) return { bg:'var(--lime)', color:'var(--black)', border:'var(--lime)' };
     if (answers[bq.id]) {
-      if (!revealed[bq.id]) return { background: 'var(--bg-3)', color: 'var(--tx-2)', border: '1px solid var(--border-mid)' };
-      return answers[bq.id] === bq.correctOptionId
-        ? { background: 'var(--green-dim)', color: 'var(--green)', border: '1px solid var(--green)' }
-        : { background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid var(--red)' };
+      if (!revealed[bq.id]) return { bg:'transparent', color:'var(--white)', border:'var(--white)' };
+      return answers[bq.id]===bq.correctOptionId
+        ? { bg:'transparent', color:'var(--mint)', border:'var(--mint)' }
+        : { bg:'transparent', color:'#ff4444', border:'#ff4444' };
     }
-    return { background: 'transparent', color: 'var(--tx-3)', border: '1px solid var(--border)' };
+    return { bg:'transparent', color:'var(--muted)', border:'var(--dim)' };
   };
 
   return (
-    <div style={{ display: 'flex', gap: 0, minHeight: 'calc(100vh - 48px)' }}>
+    <div style={{ display:'flex', minHeight:'calc(100vh - 52px)' }}>
 
-      {/* Left — question nav sidebar */}
-      <div style={{
-        width: 200, flexShrink: 0,
-        borderRight: '1px solid var(--border)',
-        background: 'var(--bg-1)',
-        padding: '16px 12px',
-        display: 'flex', flexDirection: 'column', gap: 12,
-      }}>
+      {/* Left sidebar */}
+      <div style={{ width:220, flexShrink:0, borderRight:'1.5px solid var(--dim)', background:'var(--black-2)', padding:'20px 16px', display:'flex', flexDirection:'column', gap:16 }}>
+
         {/* Timer */}
         <div style={{
-          textAlign: 'center',
-          padding: '10px',
-          borderRadius: 6,
-          background: isLow ? 'var(--red-dim)' : 'var(--bg-2)',
-          border: `1px solid ${isLow ? 'var(--red)' : 'var(--border)'}`,
-          fontSize: 18, fontWeight: 700,
-          color: isLow ? 'var(--red)' : 'var(--tx-1)',
-          fontFamily: 'JetBrains Mono, monospace',
-          letterSpacing: '0.05em',
+          padding:'12px',
+          border:`1.5px solid ${isLow ? '#ff4444' : 'var(--dim)'}`,
+          textAlign:'center',
+          fontFamily:'Space Mono, monospace',
+          fontSize:24, fontWeight:700,
+          color: isLow ? '#ff4444' : 'var(--white)',
+          background: isLow ? 'rgba(255,68,68,0.06)' : 'transparent',
         }}>
-          {fmt(timeRemaining)}
+          {fmt(timeLeft)}
         </div>
 
         {/* Progress */}
-        <div style={{ fontSize: 11.5, color: 'var(--tx-3)', textAlign: 'center' }}>
-          {correctCount}/{answeredCount} correct
+        <div style={{ fontSize:12, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+          {correct}/{Object.keys(answers).length} correct
         </div>
 
         {/* Progress bar */}
-        <div style={{ height: 3, background: 'var(--bg-3)', borderRadius: 2, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', background: 'var(--acc)', borderRadius: 2,
-            width: `${((currentQuestion + 1) / quiz.questions.length) * 100}%`,
-            transition: 'width 0.3s',
-          }} />
+        <div style={{ height:2, background:'var(--dim)' }}>
+          <div style={{ height:'100%', background:'var(--lime)', width:`${pct}%`, transition:'width 0.3s' }} />
         </div>
 
-        {/* Bubbles */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-          {quiz.questions.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentQuestion(idx)}
-              style={{
-                width: 30, height: 30, borderRadius: 5,
-                fontSize: 11.5, fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'Plus Jakarta Sans, sans-serif',
-                transition: 'all 0.12s',
-                ...bubbleStyle(idx),
-              }}
-            >
-              {idx + 1}
-            </button>
-          ))}
+        {/* Question bubbles */}
+        <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+          {quiz.questions.map((_,idx) => {
+            const bc = bubbleColor(idx);
+            return (
+              <button key={idx} onClick={() => setCur(idx)} style={{
+                width:28, height:28,
+                background:bc.bg,
+                color:bc.color,
+                border:`1.5px solid ${bc.border}`,
+                fontSize:11, fontWeight:700,
+                cursor:'pointer',
+                fontFamily:'Space Mono, monospace',
+                transition:'all 0.1s',
+              }}>
+                {idx+1}
+              </button>
+            );
+          })}
         </div>
 
         {/* Legend */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 4 }}>
-          {[
-            { color: 'var(--acc)', label: 'Current' },
-            { color: 'var(--green)', label: 'Correct' },
-            { color: 'var(--red)', label: 'Wrong' },
-            { color: 'var(--tx-3)', label: 'Unattempted' },
-          ].map(l => (
-            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--tx-3)' }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: l.color }} />
-              {l.label}
-            </div>
-          ))}
-        </div>
+        {[
+          { color:'var(--lime)', label:'Current' },
+          { color:'var(--mint)', label:'Correct' },
+          { color:'#ff4444', label:'Wrong' },
+          { color:'var(--muted)', label:'Untouched' },
+        ].map(l => (
+          <div key={l.label} style={{ display:'flex', alignItems:'center', gap:7, fontSize:11, color:'var(--muted)' }}>
+            <div style={{ width:8, height:8, background:l.color, flexShrink:0 }} />
+            {l.label}
+          </div>
+        ))}
       </div>
 
-      {/* Right — question area */}
-      <div style={{ flex: 1, padding: '24px 32px', maxWidth: 740 }}>
+      {/* Right — question */}
+      <div style={{ flex:1, padding:'32px 40px', maxWidth:740 }}>
 
-        {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border)',
-        }}>
-          <div style={{ fontSize: 12, color: 'var(--tx-3)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            Q{currentQuestion + 1} / {quiz.questions.length}
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx-2)' }}>
+        {/* Q header */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:28, paddingBottom:16, borderBottom:'1.5px solid var(--dim)' }}>
+          <span style={{ fontFamily:'Space Mono, monospace', fontSize:13, color:'var(--lime)' }}>
+            Q{cur+1} <span style={{ color:'var(--muted)' }}>/ {quiz.questions.length}</span>
+          </span>
+          <span style={{ fontSize:12, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.05em' }}>
             {quiz.quiz_title}
-          </div>
+          </span>
         </div>
 
-        {/* Question */}
-        <div key={currentQuestion} className="fade-in">
-          <p style={{
-            fontSize: 15.5, lineHeight: 1.7, color: 'var(--tx-1)',
-            fontWeight: 500, marginBottom: 22,
-          }}>
+        <div key={cur} className="fade-up">
+          <p style={{ fontSize:16, lineHeight:1.75, color:'var(--white)', marginBottom:28, fontWeight:500 }}>
             {q.questionText}
           </p>
 
-          {/* Options */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:24 }}>
             {q.options.map((opt, i) => {
-              const s = optStyle(opt.id);
-              const letters = ['A', 'B', 'C', 'D'];
-              const isSel = sel === opt.id;
-              const isC = opt.id === q.correctOptionId;
+              const isSel = sel===opt.id;
+              const isC = opt.id===q.correctOptionId;
+              const letters = ['A','B','C','D'];
               return (
-                <div
-                  key={opt.id}
-                  onClick={() => handleSelect(opt.id)}
+                <div key={opt.id} className={optClass(opt.id)} onClick={() => select(opt.id)}
                   style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 12,
-                    padding: '11px 14px', borderRadius: 6,
+                    display:'flex', alignItems:'flex-start', gap:14,
+                    padding:'13px 16px',
                     cursor: isRev ? 'default' : 'pointer',
-                    transition: 'all 0.12s',
-                    ...s,
-                  }}
-                >
-                  <span style={{
-                    width: 22, height: 22, borderRadius: 4, flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 11, fontWeight: 700,
-                    background: isSel || (isRev && isC) ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
-                    color: 'inherit',
+                    transition:'all 0.1s',
                   }}>
-                    {letters[i]}
-                  </span>
-                  <span style={{ fontSize: 14, lineHeight: 1.55, flex: 1 }}>{opt.text}</span>
-                  {isRev && isC && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--green)', flexShrink: 0 }}>✓ Correct</span>
-                  )}
-                  {isRev && isSel && !isC && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--red)', flexShrink: 0 }}>✗ Wrong</span>
-                  )}
+                  <span style={{
+                    width:22, height:22, display:'flex', alignItems:'center', justifyContent:'center',
+                    border:'1.5px solid currentColor', flexShrink:0,
+                    fontFamily:'Space Mono, monospace', fontSize:11, fontWeight:700,
+                  }}>{letters[i]}</span>
+                  <span style={{ flex:1, fontSize:14, lineHeight:1.55 }}>{opt.text}</span>
+                  {isRev && isC && <span style={{ fontSize:11, fontWeight:700, color:'var(--mint)', flexShrink:0, textTransform:'uppercase' }}>✓ Correct</span>}
+                  {isRev && isSel && !isC && <span style={{ fontSize:11, fontWeight:700, color:'#ff4444', flexShrink:0, textTransform:'uppercase' }}>✗ Wrong</span>}
                 </div>
               );
             })}
           </div>
 
-          {/* Explanation */}
           {isRev && q.explanation && (
-            <div className="fade-in" style={{
-              padding: '12px 16px', borderRadius: 6,
-              background: 'var(--bg-2)',
-              borderLeft: `3px solid ${isCorr ? 'var(--green)' : 'var(--red)'}`,
-              marginBottom: 20,
+            <div className="fade-up" style={{
+              padding:'14px 18px', marginBottom:24,
+              borderLeft:`3px solid ${isCorr ? 'var(--mint)' : '#ff4444'}`,
+              background:'var(--black-2)',
             }}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: isCorr ? 'var(--green)' : 'var(--red)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:isCorr?'var(--mint)':'#ff4444', marginBottom:6 }}>
                 {isCorr ? 'Correct' : 'Explanation'}
               </div>
-              <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--tx-2)', margin: 0 }}>{q.explanation}</p>
+              <p style={{ fontSize:13.5, color:'var(--muted)', lineHeight:1.65 }}>{q.explanation}</p>
             </div>
           )}
 
-          {/* Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={handlePrev} disabled={currentQuestion === 0} className="btn-ghost"
-              style={{ opacity: currentQuestion === 0 ? 0.3 : 1 }}>
-              <ChevronLeft size={13} /> Prev
-            </button>
-
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={prev} disabled={cur===0} className="btn-outline" style={{ opacity:cur===0?0.25:1 }}>← Prev</button>
             {!isRev ? (
-              <button onClick={handleCheck} disabled={!sel} className="btn-acc"
-                style={{ flex: 1, justifyContent: 'center', opacity: !sel ? 0.4 : 1 }}>
+              <button onClick={check} disabled={!sel} className="btn-lime" style={{ flex:1, justifyContent:'center', opacity:!sel?0.35:1 }}>
                 Check answer
               </button>
-            ) : currentQuestion < quiz.questions.length - 1 ? (
-              <button onClick={handleNext} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>
-                Next <ChevronRight size={13} />
+            ) : cur < quiz.questions.length-1 ? (
+              <button onClick={next} className="btn-outline" style={{ flex:1, justifyContent:'center' }}>
+                Next →
               </button>
             ) : (
-              <button onClick={handleSubmit} disabled={isSubmitting} className="btn-acc"
-                style={{ flex: 1, justifyContent: 'center', background: 'var(--green)', borderColor: 'var(--green)' }}>
-                <Flag size={13} /> {isSubmitting ? 'Submitting…' : 'Finish quiz'}
+              <button onClick={finish} disabled={submitting} className="btn-lime"
+                style={{ flex:1, justifyContent:'center', background:'var(--mint)', borderColor:'var(--mint)' }}>
+                {submitting ? 'Submitting…' : 'Finish quiz ✦'}
               </button>
             )}
-
-            <button onClick={handleNext} disabled={currentQuestion === quiz.questions.length - 1}
-              className="btn-ghost" style={{ opacity: currentQuestion === quiz.questions.length - 1 ? 0.3 : 1 }}>
-              Skip <ChevronRight size={13} />
-            </button>
+            <button onClick={next} disabled={cur===quiz.questions.length-1} className="btn-outline"
+              style={{ opacity:cur===quiz.questions.length-1?0.25:1 }}>Skip →</button>
           </div>
         </div>
       </div>

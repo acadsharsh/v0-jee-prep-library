@@ -1,15 +1,11 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Navigation } from '@/components/navigation';
 import { ChapterBrowser } from '@/components/chapter-browser';
-import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 
-interface ChaptersData {
-  [classId: string]: Array<{ id: string; book_id: string; class_identifier: string; chapter_number: number; title: string; slug: string; created_at: string; }>;
-}
+interface ChaptersData { [classId:string]: Array<{id:string;book_id:string;class_identifier:string;chapter_number:number;title:string;slug:string;created_at:string;}>; }
 
 export default function BookPage() {
   const params = useParams();
@@ -21,37 +17,29 @@ export default function BookPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [chapRes, booksRes] = await Promise.all([fetch(`/api/books/${bookSlug}/chapters`), fetch('/api/books')]);
-        const data = await chapRes.json();
-        const books = await booksRes.json();
+        const [cr, br] = await Promise.all([fetch(`/api/books/${bookSlug}/chapters`), fetch('/api/books')]);
+        const data = await cr.json(); const books = await br.json();
         setChapters(data);
-        const book = books.find((b: any) => b.slug === bookSlug);
+        const book = books.find((b:any) => b.slug===bookSlug);
         if (book) setBookTitle(book.title);
-      } catch (e) { console.error(e); }
-      finally { setIsLoading(false); }
+      } catch(e){console.error(e);}
+      finally{setIsLoading(false);}
     })();
   }, [bookSlug]);
 
-  const totalChapters = Object.values(chapters).reduce((s, arr) => s + arr.length, 0);
+  const total = Object.values(chapters).reduce((s,a) => s+a.length, 0);
 
   return (
     <>
       <Navigation />
-      <main style={{ background: 'var(--bg-0)', minHeight: 'calc(100vh - 48px)' }}>
-
-        {/* Breadcrumb header */}
-        <div style={{ padding: '14px 32px', borderBottom: '1px solid var(--border)', background: 'var(--bg-1)', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'var(--tx-3)' }}>
-            <ChevronLeft size={13} /> Library
-          </Link>
-          <span style={{ color: 'var(--border-mid)' }}>›</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx-1)' }}>{bookTitle || bookSlug}</span>
-          {!isLoading && totalChapters > 0 && (
-            <span style={{ fontSize: 12, color: 'var(--tx-3)', marginLeft: 2 }}>{totalChapters} chapters</span>
-          )}
+      <main style={{ background:'var(--black)', minHeight:'calc(100vh - 52px)' }}>
+        <div style={{ padding:'16px 40px', borderBottom:'1.5px solid var(--dim)', display:'flex', alignItems:'center', gap:14 }}>
+          <Link href="/" style={{ fontSize:12, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>← Library</Link>
+          <span style={{ color:'var(--dim)' }}>/</span>
+          <span style={{ fontSize:13, fontWeight:700, color:'var(--lime)' }}>{bookTitle||bookSlug.toUpperCase()}</span>
+          {!isLoading && total > 0 && <span style={{ fontSize:12, color:'var(--muted)' }}>{total} chapters</span>}
         </div>
-
-        <div style={{ padding: '24px 32px', maxWidth: 860 }}>
+        <div style={{ padding:'32px 40px', maxWidth:860 }}>
           <ChapterBrowser chapters={chapters} bookSlug={bookSlug} isLoading={isLoading} />
         </div>
       </main>

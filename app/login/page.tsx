@@ -1,68 +1,53 @@
 'use client';
-
 import { Navigation } from '@/components/navigation';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(''); setIsLoading(true);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setError(''); setLoading(true);
     try {
-      const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error:err } = await supabase.auth.signInWithPassword({ email, password });
       if (err) { setError(err.message); return; }
       if (data.session) router.push('/dashboard');
     } catch { setError('Login failed'); }
-    finally { setIsLoading(false); }
+    finally { setLoading(false); }
   };
 
   return (
     <>
       <Navigation />
-      <main style={{ minHeight: 'calc(100vh - 48px)', background: 'var(--bg-0)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div className="fade-in" style={{
-          width: '100%', maxWidth: 380,
-          background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8,
-          overflow: 'hidden',
-        }}>
-          <div style={{ padding: '24px 24px 20px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--tx-1)', marginBottom: 4 }}>Sign in</div>
-            <div style={{ fontSize: 13, color: 'var(--tx-3)' }}>Continue your JEE prep</div>
+      <main style={{ minHeight:'calc(100vh - 52px)', background:'var(--black)', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
+        <div className="fade-up" style={{ width:'100%', maxWidth:380, border:'1.5px solid var(--dim)' }}>
+          <div style={{ padding:'24px', borderBottom:'1.5px solid var(--dim)' }}>
+            <div style={{ fontSize:20, fontWeight:700, letterSpacing:'-0.3px' }}>SIGN IN</div>
+            <div style={{ fontSize:13, color:'var(--muted)', marginTop:4 }}>Continue your prep</div>
           </div>
-
-          <div style={{ padding: 24 }}>
-            {error && (
-              <div style={{ padding: '9px 12px', borderRadius: 5, marginBottom: 14, background: 'var(--red-dim)', border: '1px solid var(--red)', color: 'var(--red)', fontSize: 12.5 }}>
-                {error}
+          <div style={{ padding:'24px', display:'flex', flexDirection:'column', gap:14 }}>
+            {error && <div style={{ padding:'10px 14px', border:'1.5px solid #ff4444', color:'#ff4444', fontSize:13 }}>{error}</div>}
+            <form onSubmit={submit} style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'var(--muted)', marginBottom:6 }}>Email</div>
+                <input type="email" placeholder="you@example.com" value={email} required onChange={e=>setEmail(e.target.value)} />
               </div>
-            )}
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <label style={{ fontSize: 12, color: 'var(--tx-3)', fontWeight: 500 }}>Email</label>
-                <input type="email" placeholder="you@example.com" value={email} required
-                  onChange={e => setEmail(e.target.value)} style={{ width: '100%' }} />
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'var(--muted)', marginBottom:6 }}>Password</div>
+                <input type="password" placeholder="••••••••" value={password} required onChange={e=>setPassword(e.target.value)} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <label style={{ fontSize: 12, color: 'var(--tx-3)', fontWeight: 500 }}>Password</label>
-                <input type="password" placeholder="••••••••" value={password} required
-                  onChange={e => setPassword(e.target.value)} style={{ width: '100%' }} />
-              </div>
-              <button type="submit" disabled={isLoading} className="btn-acc"
-                style={{ marginTop: 6, justifyContent: 'center', opacity: isLoading ? 0.6 : 1 }}>
-                {isLoading ? 'Signing in…' : <><span>Sign in</span><ArrowRight size={13} /></>}
+              <button type="submit" disabled={loading} className="btn-lime" style={{ marginTop:6, justifyContent:'center', width:'100%' }}>
+                {loading ? 'Signing in…' : 'Sign in →'}
               </button>
             </form>
-            <p style={{ fontSize: 12.5, color: 'var(--tx-3)', marginTop: 16, textAlign: 'center' }}>
-              No account?{' '}
-              <Link href="/signup" style={{ color: 'var(--acc)', fontWeight: 600 }}>Create one</Link>
+            <p style={{ fontSize:12, color:'var(--muted)', textAlign:'center' }}>
+              No account? <Link href="/signup" style={{ color:'var(--lime)', fontWeight:700 }}>Create one</Link>
             </p>
           </div>
         </div>

@@ -1,88 +1,63 @@
 'use client';
-
 import Link from 'next/link';
 import { Book } from '@/lib/types';
-import { BookOpen, ChevronRight } from 'lucide-react';
 
 interface BookshelfProps { books: Book[]; isLoading: boolean; }
 
-const SUBJECT_COLORS: Record<string, string> = {
-  physics:   '#5b8ef0',
-  chemistry: '#4caf7d',
-  maths:     '#c97af0',
-  math:      '#c97af0',
-  default:   '#e8824a',
-};
-
-function getColor(title: string) {
-  const t = title.toLowerCase();
-  for (const k of Object.keys(SUBJECT_COLORS)) {
-    if (t.includes(k)) return SUBJECT_COLORS[k];
-  }
-  return SUBJECT_COLORS.default;
-}
+const ACCENTS = ['var(--lime)', 'var(--mint)', 'var(--yellow)', '#ff7eb3', '#7eb3ff'];
 
 export function Bookshelf({ books, isLoading }: BookshelfProps) {
-  if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {[...Array(4)].map((_, i) => (
-          <div key={i} style={{
-            height: 52, borderBottom: '1px solid var(--border)',
-            background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
-          }} />
-        ))}
-      </div>
-    );
-  }
+  if (isLoading) return (
+    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:0, border:'1.5px solid var(--dim)' }}>
+      {[...Array(4)].map((_,i) => (
+        <div key={i} style={{ height:160, borderRight:'1.5px solid var(--dim)', background:'var(--black-2)', borderBottom:'none' }} />
+      ))}
+    </div>
+  );
 
-  if (!books.length) {
-    return (
-      <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--tx-3)', fontSize: 13 }}>
-        <BookOpen size={28} style={{ margin: '0 auto 10px', display: 'block', opacity: 0.3 }} />
-        No books available yet
-      </div>
-    );
-  }
+  if (!books.length) return (
+    <div style={{ padding:'60px 0', textAlign:'center', border:'1.5px solid var(--dim)', color:'var(--muted)', fontSize:13, textTransform:'uppercase', letterSpacing:'0.08em' }}>
+      No books yet
+    </div>
+  );
 
   return (
-    <div style={{
-      border: '1px solid var(--border)',
-      borderRadius: 8,
-      overflow: 'hidden',
-      background: 'var(--bg-1)',
-    }}>
+    <div style={{ border:'1.5px solid var(--dim)', display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))' }}>
       {books.map((book, idx) => {
-        const color = getColor(book.title);
+        const accent = ACCENTS[idx % ACCENTS.length];
         return (
           <Link key={book.id} href={`/books/${book.slug}`}>
-            <div
-              className="row-item"
-              style={{
-                borderBottom: idx < books.length - 1 ? '1px solid var(--border)' : 'none',
-                gap: 14,
-              }}
+            <div style={{
+              padding:'28px 24px',
+              borderRight: '1.5px solid var(--dim)',
+              borderBottom: '1.5px solid var(--dim)',
+              cursor:'pointer',
+              transition:'background 0.12s',
+              minHeight:160,
+              display:'flex', flexDirection:'column', justifyContent:'space-between',
+              position:'relative', overflow:'hidden',
+            }}
+            onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--black-2)'}
+            onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
             >
-              {/* Color dot */}
-              <div style={{
-                width: 32, height: 32, borderRadius: 6, flexShrink: 0,
-                background: `${color}18`,
-                border: `1px solid ${color}30`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <BookOpen size={14} color={color} />
-              </div>
+              {/* Accent line top */}
+              <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:accent }} />
 
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--tx-1)' }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:accent, marginBottom:10 }}>
+                  Book {idx + 1}
+                </div>
+                <div style={{ fontSize:17, fontWeight:700, color:'var(--white)', lineHeight:1.25, letterSpacing:'-0.3px' }}>
                   {book.title}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--tx-3)', marginTop: 1 }}>
-                  Chapter-wise quizzes
-                </div>
               </div>
 
-              <ChevronRight size={14} color="var(--tx-3)" />
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:20 }}>
+                <span style={{ fontSize:12, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                  View chapters
+                </span>
+                <span style={{ color:accent, fontSize:18 }}>→</span>
+              </div>
             </div>
           </Link>
         );

@@ -1,12 +1,25 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navigation } from '@/components/navigation';
 import { Bookshelf } from '@/components/bookshelf';
 import { Book } from '@/lib/types';
 import { useAuth } from '@/lib/auth-context';
-import { ArrowRight, Flame, Target, BarChart2 } from 'lucide-react';
+
+function Ticker({ text, color, bg, reverse }: { text:string; color:string; bg:string; reverse?:boolean }) {
+  const items = Array(12).fill(text);
+  return (
+    <div className="ticker-wrap" style={{ borderColor:color, background:bg }}>
+      <div className={`ticker-track ${reverse ? 'reverse' : ''}`}>
+        {[...items, ...items].map((t, i) => (
+          <span key={i} className="ticker-item" style={{ color }}>
+            {t} <span style={{ opacity:0.4 }}>✦</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -15,92 +28,102 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/books').then(r => r.json()).then(setBooks).catch(console.error).finally(() => setIsLoading(false));
+    fetch('/api/books').then(r=>r.json()).then(setBooks).catch(console.error).finally(()=>setIsLoading(false));
   }, []);
 
   return (
     <>
       <Navigation />
-      <main style={{ background: 'var(--bg-0)', minHeight: 'calc(100vh - 48px)' }}>
 
-        {/* Hero strip — compact, not flashy */}
+      {/* Top ticker */}
+      <Ticker text="JEE ADVANCED 2026" color="var(--black)" bg="var(--lime)" />
+
+      {/* Hero */}
+      <section style={{ padding:'64px 40px 56px', borderBottom:'1.5px solid var(--dim)', position:'relative', overflow:'hidden' }}>
+        {/* Big asterisk decoration */}
         <div style={{
-          borderBottom: '1px solid var(--border)',
-          padding: '40px 40px 36px',
-          background: 'var(--bg-1)',
-        }}>
-          <div style={{ maxWidth: 680 }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              fontSize: 11.5, fontWeight: 600, color: 'var(--acc)',
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              marginBottom: 12,
-            }}>
-              <Flame size={12} /> JEE 2026 Prep
+          position:'absolute', right:60, top:40,
+          fontSize:200, fontWeight:700, color:'var(--black-3)',
+          lineHeight:1, fontFamily:'Space Mono, monospace',
+          userSelect:'none', pointerEvents:'none',
+        }}>✦</div>
+
+        <div style={{ maxWidth:760, position:'relative' }}>
+          <div className="section-label" style={{ marginBottom:20 }}>
+            Physics · Chemistry · Maths
+          </div>
+
+          <h1 style={{
+            fontFamily:'Space Grotesk, sans-serif',
+            fontWeight:700,
+            fontSize:'clamp(48px, 8vw, 88px)',
+            lineHeight:0.95,
+            letterSpacing:'-2px',
+            color:'var(--white)',
+            marginBottom:32,
+          }}>
+            CRACK<br />
+            <span style={{ color:'var(--lime)' }}>JEE*</span><br />
+            OR DIE<br />TRYING.
+          </h1>
+
+          <p style={{ fontSize:16, color:'var(--muted)', maxWidth:440, lineHeight:1.7, marginBottom:36 }}>
+            Chapter-wise quizzes from HCV, Irodov &amp; more.
+            Track your accuracy. Fix what's weak. Get the rank.
+          </p>
+
+          {!authLoading && (
+            <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+              {user ? (
+                <button onClick={() => router.push('/dashboard')} className="btn-lime">
+                  Dashboard →
+                </button>
+              ) : (
+                <>
+                  <button onClick={() => router.push('/signup')} className="btn-lime">
+                    Start for free →
+                  </button>
+                  <button onClick={() => router.push('/books/hcv')} className="btn-outline">
+                    Browse quizzes
+                  </button>
+                </>
+              )}
             </div>
-            <h1 style={{
-              fontSize: 28, fontWeight: 700, color: 'var(--tx-1)',
-              lineHeight: 1.25, marginBottom: 10,
-              letterSpacing: '-0.3px',
-            }}>
-              Chapter-wise quizzes.<br />
-              Track what you know.
-            </h1>
-            <p style={{ fontSize: 14, color: 'var(--tx-2)', lineHeight: 1.65, marginBottom: 24, maxWidth: 480 }}>
-              Practice from HCV, Irodov &amp; more. See your accuracy per chapter, fix weak spots, move faster.
-            </p>
-
-            {!authLoading && !user && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => router.push('/signup')} className="btn-acc">
-                  Start for free <ArrowRight size={13} />
-                </button>
-                <button onClick={() => router.push('/books/hcv')} className="btn-ghost">
-                  Browse quizzes
-                </button>
-              </div>
-            )}
-            {!authLoading && user && (
-              <button onClick={() => router.push('/dashboard')} className="btn-acc">
-                My dashboard <ArrowRight size={13} />
-              </button>
-            )}
-          </div>
-
-          {/* Inline stats row */}
-          <div style={{
-            display: 'flex', gap: 32, marginTop: 32,
-            paddingTop: 24, borderTop: '1px solid var(--border)',
-          }}>
-            {[
-              { icon: <Target size={14} />, val: 'Chapter-wise', sub: 'organized by book & class' },
-              { icon: <BarChart2 size={14} />, sub: 'score & accuracy per attempt' , val: 'Live analytics' },
-              { icon: <Flame size={14} />, val: 'Instant feedback', sub: 'explanations on every Q' },
-            ].map((s, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ color: 'var(--acc)' }}>{s.icon}</span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx-1)' }}>{s.val}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--tx-3)' }}>{s.sub}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
         </div>
+      </section>
 
-        {/* Book library */}
-        <div style={{ padding: '28px 40px' }}>
-          <div style={{
-            display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 18,
+      {/* Stats strip */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', borderBottom:'1.5px solid var(--dim)' }}>
+        {[
+          { num:'HCV', label:'Halliday Resnick Krane', sub:'40 chapters' },
+          { num:'PYQ', label:'Previous year questions', sub:'chapter-wise' },
+          { num:'100%', label:'Free to use', sub:'no paywalls' },
+        ].map((s,i) => (
+          <div key={i} className="stat-box" style={{
+            borderRight: i < 2 ? '1.5px solid var(--dim)' : 'none',
+            borderTop:'none', borderBottom:'none', borderLeft:'none',
           }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx-1)' }}>Available books</span>
-            {!isLoading && (
-              <span style={{ fontSize: 12, color: 'var(--tx-3)' }}>{books.length} books</span>
-            )}
+            <div className="stat-num" style={{ color: i===0 ? 'var(--lime)' : i===1 ? 'var(--mint)' : 'var(--yellow)' }}>
+              {s.num}
+            </div>
+            <div style={{ fontSize:14, fontWeight:600, color:'var(--white)' }}>{s.label}</div>
+            <div className="section-label" style={{ marginTop:2 }}>{s.sub}</div>
           </div>
-          <Bookshelf books={books} isLoading={isLoading} />
+        ))}
+      </div>
+
+      {/* Bottom ticker */}
+      <Ticker text="PHYSICS · CHEMISTRY · MATHEMATICS" color="var(--yellow)" bg="transparent" reverse />
+
+      {/* Book library */}
+      <section style={{ padding:'40px' }}>
+        <div style={{ display:'flex', alignItems:'baseline', gap:12, marginBottom:24 }}>
+          <h2 style={{ fontSize:22, fontWeight:700, letterSpacing:'-0.5px' }}>BOOKS</h2>
+          {!isLoading && <span className="section-label">{books.length} available</span>}
         </div>
-      </main>
+        <Bookshelf books={books} isLoading={isLoading} />
+      </section>
     </>
   );
 }
