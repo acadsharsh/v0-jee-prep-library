@@ -12,7 +12,7 @@ export async function GET(
     const { data: quiz, error } = await supabase
       .from('quizzes')
       .select('*')
-      .eq('id', quizId)
+      .eq('chapter_id', quizId)
       .single();
 
     if (error) throw error;
