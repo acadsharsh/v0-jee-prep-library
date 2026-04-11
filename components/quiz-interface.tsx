@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { QuizJSON } from '@/lib/types';
+import { CheckCircle, XCircle, ChevronLeft, ChevronRight, Lightbulb, Flag } from 'lucide-react';
 
 interface QuizInterfaceProps {
   quiz: QuizJSON;
@@ -20,13 +21,10 @@ export function QuizInterface({ quiz, quizId, onSubmit }: QuizInterfaceProps) {
 
   useEffect(() => {
     if (quizDone) return;
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 0) { clearInterval(timer); return 0; }
-        return prev - 1;
-      });
+    const t = setInterval(() => {
+      setTimeRemaining(p => { if (p <= 0) { clearInterval(t); return 0; } return p - 1; });
     }, 1000);
-    return () => clearInterval(timer);
+    return () => clearInterval(t);
   }, [quizDone]);
 
   const question = quiz.questions[currentQuestion];
@@ -40,524 +38,282 @@ export function QuizInterface({ quiz, quizId, onSubmit }: QuizInterfaceProps) {
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
   const isLowTime = timeRemaining < 300;
+  const progress = ((currentQuestion + 1) / quiz.questions.length) * 100;
 
   const handleSelect = (optionId: string) => {
     if (isRevealed) return;
-    setAnswers(prev => ({ ...prev, [question.id]: optionId }));
+    setAnswers(p => ({ ...p, [question.id]: optionId }));
   };
-
-  const handleCheck = () => {
-    if (!selectedAnswer) return;
-    setRevealed(prev => ({ ...prev, [question.id]: true }));
-  };
-
-  const handleNext = () => {
-    if (currentQuestion < quiz.questions.length - 1) {
-      setCurrentQuestion(prev => prev + 1);
-    }
-  };
-
+  const handleCheck = () => { if (!selectedAnswer) return; setRevealed(p => ({ ...p, [question.id]: true })); };
+  const handleNext = () => { if (currentQuestion < quiz.questions.length - 1) setCurrentQuestion(p => p + 1); };
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setQuizDone(true);
-    const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-    try {
-      await onSubmit(answers, timeTaken);
-    } finally {
-      setIsSubmitting(false);
+    setIsSubmitting(true); setQuizDone(true);
+    await onSubmit(answers, Math.floor((Date.now() - startTime) / 1000));
+    setIsSubmitting(false);
+  };
+
+  const getBubbleStyle = (idx: number) => {
+    const q = quiz.questions[idx];
+    if (idx === currentQuestion) return { bg: 'rgba(79,142,247,0.2)', border: '#4f8ef7', color: '#4f8ef7' };
+    if (answers[q.id]) {
+      if (!revealed[q.id]) return { bg: 'rgba(79,142,247,0.08)', border: 'rgba(79,142,247,0.4)', color: '#4f8ef7' };
+      return answers[q.id] === q.correctOptionId
+        ? { bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.5)', color: '#22c55e' }
+        : { bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.4)', color: '#ef4444' };
     }
+    return { bg: 'transparent', border: 'rgba(255,255,255,0.08)', color: '#8b92a5' };
   };
 
   const getOptionStyle = (optionId: string) => {
+    const isSel = selectedAnswer === optionId;
+    const isCorr = optionId === question.correctOptionId;
     if (!isRevealed) {
-      return selectedAnswer === optionId
-        ? 'option-selected'
-        : 'option-default';
+      if (isSel) return { bg: 'rgba(79,142,247,0.12)', border: '#4f8ef7', color: '#f0f2f7', dot: '#4f8ef7' };
+      return { bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.07)', color: '#d0d4e0', dot: '#4a5168' };
     }
-    if (optionId === question.correctOptionId) return 'option-correct';
-    if (optionId === selectedAnswer && selectedAnswer !== question.correctOptionId) return 'option-wrong';
-    return 'option-dim';
-  };
-
-  const getQuestionBubbleStyle = (idx: number) => {
-    const q = quiz.questions[idx];
-    if (idx === currentQuestion) return 'bubble-current';
-    if (answers[q.id]) {
-      const rev = revealed[q.id];
-      if (!rev) return 'bubble-answered';
-      return answers[q.id] === q.correctOptionId ? 'bubble-correct' : 'bubble-wrong';
-    }
-    return 'bubble-default';
+    if (isCorr) return { bg: 'rgba(34,197,94,0.1)', border: '#22c55e', color: '#f0f2f7', dot: '#22c55e' };
+    if (isSel && !isCorr) return { bg: 'rgba(239,68,68,0.1)', border: '#ef4444', color: '#f0f2f7', dot: '#ef4444' };
+    return { bg: 'transparent', border: 'rgba(255,255,255,0.04)', color: '#4a5168', dot: '#4a5168' };
   };
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600&display=swap');
+    <div style={{ fontFamily: 'Syne, sans-serif', maxWidth: 800, margin: '0 auto', padding: '0 0 60px' }}>
 
-        .quiz-wrap {
-          font-family: 'DM Sans', sans-serif;
-          max-width: 780px;
-          margin: 0 auto;
-          padding: 0 0 60px;
-        }
-
-        /* Header */
-        .quiz-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          margin-bottom: 28px;
-          gap: 16px;
-        }
-        .quiz-title {
-          font-family: 'Instrument Serif', serif;
-          font-size: 26px;
-          font-weight: 400;
-          color: var(--color-text-primary);
-          line-height: 1.3;
-          flex: 1;
-        }
-        .quiz-meta {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 6px;
-          flex-shrink: 0;
-        }
-        .timer {
-          font-size: 15px;
-          font-weight: 600;
-          padding: 6px 14px;
-          border-radius: 20px;
-          border: 1.5px solid;
-          font-variant-numeric: tabular-nums;
-          transition: all 0.3s;
-        }
-        .timer-normal {
-          border-color: #B5D4F4;
-          color: #185FA5;
-          background: #E6F1FB;
-        }
-        .timer-low {
-          border-color: #F09595;
-          color: #A32D2D;
-          background: #FCEBEB;
-          animation: pulse 1s infinite;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-        .score-pill {
-          font-size: 12px;
-          color: var(--color-text-secondary);
-        }
-
-        /* Progress bar */
-        .progress-bar-wrap {
-          height: 4px;
-          background: var(--color-border-tertiary);
-          border-radius: 99px;
-          margin-bottom: 6px;
-          overflow: hidden;
-        }
-        .progress-bar-fill {
-          height: 100%;
-          background: #378ADD;
-          border-radius: 99px;
-          transition: width 0.4s ease;
-        }
-        .progress-label {
-          font-size: 12px;
-          color: var(--color-text-secondary);
-          margin-bottom: 24px;
-        }
-
-        /* Question card */
-        .question-card {
-          background: var(--color-background-primary);
-          border: 0.5px solid var(--color-border-tertiary);
-          border-radius: 16px;
-          padding: 28px 28px 24px;
-          margin-bottom: 16px;
-        }
-        .q-number {
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #378ADD;
-          margin-bottom: 10px;
-        }
-        .q-text {
-          font-size: 17px;
-          line-height: 1.6;
-          color: var(--color-text-primary);
-          margin-bottom: 24px;
-          font-weight: 400;
-        }
-
-        /* Options */
-        .options {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-        .option {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          padding: 13px 16px;
-          border-radius: 10px;
-          border: 1.5px solid;
-          cursor: pointer;
-          transition: all 0.15s;
-          font-size: 15px;
-        }
-        .option-default {
-          border-color: var(--color-border-tertiary);
-          background: var(--color-background-primary);
-          color: var(--color-text-primary);
-        }
-        .option-default:hover {
-          border-color: #85B7EB;
-          background: #E6F1FB;
-        }
-        .option-selected {
-          border-color: #378ADD;
-          background: #E6F1FB;
-          color: #0C447C;
-        }
-        .option-correct {
-          border-color: #639922;
-          background: #EAF3DE;
-          color: #3B6D11;
-        }
-        .option-wrong {
-          border-color: #E24B4A;
-          background: #FCEBEB;
-          color: #A32D2D;
-        }
-        .option-dim {
-          border-color: var(--color-border-tertiary);
-          background: var(--color-background-secondary);
-          color: var(--color-text-tertiary);
-          cursor: default;
-          opacity: 0.6;
-        }
-        .option-dot {
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          border: 1.5px solid currentColor;
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-        }
-        .option-dot-filled::after {
-          content: '';
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: currentColor;
-          display: block;
-        }
-        .option-label {
-          flex: 1;
-          line-height: 1.4;
-        }
-        .option-tag {
-          font-size: 11px;
-          font-weight: 600;
-          padding: 2px 8px;
-          border-radius: 4px;
-          flex-shrink: 0;
-        }
-        .tag-correct { background: #C0DD97; color: #27500A; }
-        .tag-wrong { background: #F7C1C1; color: #791F1F; }
-
-        /* Explanation */
-        .explanation {
-          margin-top: 16px;
-          padding: 14px 16px;
-          background: var(--color-background-secondary);
-          border-radius: 10px;
-          border-left: 3px solid #639922;
-          font-size: 14px;
-          line-height: 1.6;
-          color: var(--color-text-secondary);
-          animation: fadeIn 0.3s ease;
-        }
-        .explanation-wrong {
-          border-left-color: #E24B4A;
-        }
-        .explanation-label {
-          font-weight: 600;
-          color: var(--color-text-primary);
-          margin-bottom: 4px;
-          font-size: 13px;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Action buttons */
-        .actions {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 20px;
-        }
-        .btn {
-          padding: 10px 22px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          border: 1.5px solid;
-          transition: all 0.15s;
-          font-family: 'DM Sans', sans-serif;
-        }
-        .btn:active { transform: scale(0.97); }
-        .btn-ghost {
-          background: transparent;
-          border-color: var(--color-border-secondary);
-          color: var(--color-text-secondary);
-        }
-        .btn-ghost:hover { background: var(--color-background-secondary); }
-        .btn-ghost:disabled { opacity: 0.3; cursor: not-allowed; }
-        .btn-primary {
-          background: #185FA5;
-          border-color: #185FA5;
-          color: white;
-        }
-        .btn-primary:hover { background: #0C447C; border-color: #0C447C; }
-        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-        .btn-check {
-          background: #378ADD;
-          border-color: #378ADD;
-          color: white;
-          flex: 1;
-          max-width: 180px;
-        }
-        .btn-check:hover { background: #185FA5; border-color: #185FA5; }
-        .btn-check:disabled { opacity: 0.35; cursor: not-allowed; }
-        .btn-next {
-          background: var(--color-background-primary);
-          border-color: var(--color-border-secondary);
-          color: var(--color-text-primary);
-        }
-        .btn-next:hover { background: var(--color-background-secondary); }
-        .btn-submit {
-          background: #3B6D11;
-          border-color: #3B6D11;
-          color: white;
-        }
-        .btn-submit:hover { background: #27500A; }
-        .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        /* Question bubbles */
-        .bubbles-scroll {
-          overflow-x: auto;
-          padding-bottom: 4px;
-        }
-        .bubbles {
-          display: flex;
-          gap: 6px;
-          flex-wrap: wrap;
-        }
-        .bubble {
-          width: 34px;
-          height: 34px;
-          border-radius: 8px;
-          border: 1.5px solid;
-          font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.15s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-        .bubble-default { border-color: var(--color-border-tertiary); color: var(--color-text-secondary); background: transparent; }
-        .bubble-default:hover { border-color: var(--color-border-secondary); background: var(--color-background-secondary); }
-        .bubble-current { border-color: #378ADD; background: #E6F1FB; color: #185FA5; }
-        .bubble-answered { border-color: #85B7EB; background: #E6F1FB; color: #185FA5; }
-        .bubble-correct { border-color: #97C459; background: #EAF3DE; color: #3B6D11; }
-        .bubble-wrong { border-color: #F09595; background: #FCEBEB; color: #A32D2D; }
-
-        /* Legend */
-        .legend {
-          display: flex;
-          gap: 14px;
-          margin-top: 12px;
-          flex-wrap: wrap;
-        }
-        .legend-item {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 11px;
-          color: var(--color-text-secondary);
-        }
-        .legend-dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 3px;
-        }
-      `}</style>
-
-      <div className="quiz-wrap">
-        {/* Header */}
-        <div className="quiz-header">
-          <h1 className="quiz-title">{quiz.quiz_title}</h1>
-          <div className="quiz-meta">
-            <span className={`timer ${isLowTime ? 'timer-low' : 'timer-normal'}`}>
-              {formatTime(timeRemaining)}
-            </span>
-            <span className="score-pill">
-              {correctCount}/{answeredCount} correct
-            </span>
+      {/* Top bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#f0f2f7', margin: 0, letterSpacing: '-0.3px' }}>
+            {quiz.quiz_title}
+          </h1>
+          <div style={{ fontSize: 12, color: '#8b92a5', marginTop: 4 }}>
+            {currentQuestion + 1} / {quiz.questions.length} questions · {correctCount} correct
           </div>
         </div>
-
-        {/* Progress */}
-        <div className="progress-bar-wrap">
-          <div
-            className="progress-bar-fill"
-            style={{ width: `${((currentQuestion + 1) / quiz.questions.length) * 100}%` }}
-          />
+        <div style={{
+          padding: '8px 16px', borderRadius: 30,
+          border: `1.5px solid ${isLowTime ? '#ef4444' : 'rgba(79,142,247,0.4)'}`,
+          background: isLowTime ? 'rgba(239,68,68,0.1)' : 'rgba(79,142,247,0.08)',
+          color: isLowTime ? '#ef4444' : '#4f8ef7',
+          fontSize: 15, fontWeight: 700,
+          fontFamily: 'JetBrains Mono, monospace',
+          animation: isLowTime ? 'pulse-blink 1s infinite' : 'none',
+        }}>
+          {formatTime(timeRemaining)}
         </div>
-        <p className="progress-label">
-          Question {currentQuestion + 1} of {quiz.questions.length}
-          {answeredCount > 0 && ` · ${answeredCount} answered`}
+        <style>{`@keyframes pulse-blink { 0%,100%{opacity:1} 50%{opacity:0.6} }`}</style>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginBottom: 28, overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', borderRadius: 2,
+          width: `${progress}%`,
+          background: 'linear-gradient(90deg, #4f8ef7, #8b5cf6)',
+          transition: 'width 0.4s ease',
+          boxShadow: '0 0 10px rgba(79,142,247,0.5)',
+        }} />
+      </div>
+
+      {/* Question card */}
+      <div className="animate-scale-in" key={currentQuestion} style={{
+        background: 'var(--bg-surface)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 16,
+        padding: 28,
+        marginBottom: 14,
+      }}>
+        <div style={{
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: '#4f8ef7', marginBottom: 14,
+        }}>
+          Question {currentQuestion + 1}
+        </div>
+        <p style={{
+          fontSize: 17, lineHeight: 1.65, color: '#f0f2f7',
+          marginBottom: 28, fontWeight: 500,
+        }}>
+          {question.questionText}
         </p>
 
-        {/* Question card */}
-        <div className="question-card">
-          <div className="q-number">Q{currentQuestion + 1}</div>
-          <p className="q-text">{question.questionText}</p>
-
-          <div className="options">
-            {question.options.map((option) => {
-              const style = getOptionStyle(option.id);
-              const isSel = selectedAnswer === option.id;
-              const isCorr = option.id === question.correctOptionId;
-              return (
-                <div
-                  key={option.id}
-                  className={`option ${style}`}
-                  onClick={() => handleSelect(option.id)}
-                >
-                  <span className={`option-dot ${isSel || (isRevealed && isCorr) ? 'option-dot-filled' : ''}`} />
-                  <span className="option-label">{option.text}</span>
-                  {isRevealed && isCorr && (
-                    <span className="option-tag tag-correct">Correct</span>
-                  )}
-                  {isRevealed && isSel && !isCorr && (
-                    <span className="option-tag tag-wrong">Wrong</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Explanation after reveal */}
-          {isRevealed && question.explanation && (
-            <div className={`explanation ${!isCorrect ? 'explanation-wrong' : ''}`}>
-              <div className="explanation-label">
-                {isCorrect ? 'Correct!' : 'Not quite —'} here&apos;s why:
+        {/* Options */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {question.options.map((opt) => {
+            const s = getOptionStyle(opt.id);
+            const isSel = selectedAnswer === opt.id;
+            const isCorr = opt.id === question.correctOptionId;
+            return (
+              <div key={opt.id}
+                onClick={() => handleSelect(opt.id)}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 14,
+                  padding: '14px 18px',
+                  borderRadius: 11,
+                  border: `1.5px solid ${s.border}`,
+                  background: s.bg,
+                  cursor: isRevealed ? 'default' : 'pointer',
+                  transition: 'all 0.15s',
+                  color: s.color,
+                }}
+              >
+                {/* Indicator */}
+                {isRevealed ? (
+                  isCorr
+                    ? <CheckCircle size={18} color="#22c55e" style={{ flexShrink: 0, marginTop: 1 }} />
+                    : (isSel ? <XCircle size={18} color="#ef4444" style={{ flexShrink: 0, marginTop: 1 }} /> : <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.08)', flexShrink: 0, marginTop: 1 }} />)
+                ) : (
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+                    border: `1.5px solid ${s.dot}`,
+                    background: isSel ? s.dot : 'transparent',
+                    transition: 'all 0.15s',
+                    boxShadow: isSel ? `0 0 8px ${s.dot}` : 'none',
+                  }} />
+                )}
+                <span style={{ fontSize: 15, lineHeight: 1.5, flex: 1 }}>{opt.text}</span>
+                {isRevealed && isCorr && (
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: 'rgba(34,197,94,0.2)', color: '#22c55e', flexShrink: 0 }}>
+                    CORRECT
+                  </span>
+                )}
+                {isRevealed && isSel && !isCorr && (
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: 'rgba(239,68,68,0.2)', color: '#ef4444', flexShrink: 0 }}>
+                    WRONG
+                  </span>
+                )}
               </div>
-              {question.explanation}
+            );
+          })}
+        </div>
+
+        {/* Explanation */}
+        {isRevealed && question.explanation && (
+          <div className="animate-fade-up" style={{
+            marginTop: 18, padding: '14px 18px',
+            borderRadius: 10,
+            background: isCorrect ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)',
+            borderLeft: `3px solid ${isCorrect ? '#22c55e' : '#ef4444'}`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <Lightbulb size={13} color={isCorrect ? '#22c55e' : '#f59e0b'} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: isCorrect ? '#22c55e' : '#f59e0b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                {isCorrect ? 'Correct!' : 'Explanation'}
+              </span>
             </div>
+            <p style={{ fontSize: 14, lineHeight: 1.6, color: '#d0d4e0', margin: 0 }}>{question.explanation}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Action bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 24 }}>
+        <button
+          onClick={() => setCurrentQuestion(p => Math.max(0, p - 1))}
+          disabled={currentQuestion === 0}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '10px 18px', borderRadius: 9,
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: currentQuestion === 0 ? '#4a5168' : '#8b92a5',
+            fontSize: 13, fontWeight: 600,
+            cursor: currentQuestion === 0 ? 'not-allowed' : 'pointer',
+            fontFamily: 'Syne, sans-serif',
+          }}>
+          <ChevronLeft size={14} /> Prev
+        </button>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          {!isRevealed ? (
+            <button onClick={handleCheck} disabled={!selectedAnswer} style={{
+              padding: '10px 24px', borderRadius: 9,
+              background: selectedAnswer ? '#4f8ef7' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${selectedAnswer ? '#4f8ef7' : 'rgba(255,255,255,0.06)'}`,
+              color: selectedAnswer ? '#fff' : '#4a5168',
+              fontSize: 13, fontWeight: 700,
+              cursor: selectedAnswer ? 'pointer' : 'not-allowed',
+              fontFamily: 'Syne, sans-serif',
+              boxShadow: selectedAnswer ? '0 0 20px rgba(79,142,247,0.35)' : 'none',
+              transition: 'all 0.15s',
+            }}>
+              Check answer
+            </button>
+          ) : currentQuestion < quiz.questions.length - 1 ? (
+            <button onClick={handleNext} style={{
+              padding: '10px 24px', borderRadius: 9,
+              background: 'var(--bg-elevated)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: '#f0f2f7', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'Syne, sans-serif',
+            }}>
+              Next →
+            </button>
+          ) : (
+            <button onClick={handleSubmit} disabled={isSubmitting} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 24px', borderRadius: 9,
+              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+              border: 'none', color: '#fff', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'Syne, sans-serif',
+              boxShadow: '0 0 20px rgba(34,197,94,0.35)',
+            }}>
+              <Flag size={13} />
+              {isSubmitting ? 'Submitting…' : 'Finish quiz'}
+            </button>
           )}
         </div>
 
-        {/* Action buttons */}
-        <div className="actions">
-          <button
-            className="btn btn-ghost"
-            onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
-            disabled={currentQuestion === 0}
-          >
-            ← Prev
-          </button>
-
-          <div style={{ display: 'flex', gap: '8px', flex: 1, justifyContent: 'center' }}>
-            {!isRevealed ? (
-              <button
-                className="btn btn-check"
-                onClick={handleCheck}
-                disabled={!selectedAnswer}
-              >
-                Check Answer
-              </button>
-            ) : (
-              currentQuestion < quiz.questions.length - 1 ? (
-                <button className="btn btn-next" onClick={handleNext}>
-                  Next Question →
-                </button>
-              ) : (
-                <button
-                  className="btn btn-submit"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Submitting…' : 'Finish Quiz'}
-                </button>
-              )
-            )}
-          </div>
-
-          <button
-            className="btn btn-ghost"
-            onClick={handleNext}
-            disabled={currentQuestion === quiz.questions.length - 1}
-          >
-            Skip →
-          </button>
-        </div>
-
-        {/* Question bubbles */}
-        <div className="bubbles-scroll">
-          <div className="bubbles">
-            {quiz.questions.map((q, idx) => (
-              <button
-                key={q.id}
-                className={`bubble ${getQuestionBubbleStyle(idx)}`}
-                onClick={() => setCurrentQuestion(idx)}
-                title={`Question ${idx + 1}`}
-              >
-                {idx + 1}
-              </button>
-            ))}
-          </div>
-          <div className="legend">
-            <div className="legend-item">
-              <div className="legend-dot" style={{ background: '#E6F1FB', border: '1px solid #85B7EB' }} />
-              Answered
-            </div>
-            <div className="legend-item">
-              <div className="legend-dot" style={{ background: '#EAF3DE', border: '1px solid #97C459' }} />
-              Correct
-            </div>
-            <div className="legend-item">
-              <div className="legend-dot" style={{ background: '#FCEBEB', border: '1px solid #F09595' }} />
-              Wrong
-            </div>
-            <div className="legend-item">
-              <div className="legend-dot" style={{ background: 'transparent', border: '1px solid #ccc' }} />
-              Not visited
-            </div>
-          </div>
-        </div>
+        <button
+          onClick={handleNext}
+          disabled={currentQuestion === quiz.questions.length - 1}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '10px 18px', borderRadius: 9,
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: currentQuestion === quiz.questions.length - 1 ? '#4a5168' : '#8b92a5',
+            fontSize: 13, fontWeight: 600,
+            cursor: currentQuestion === quiz.questions.length - 1 ? 'not-allowed' : 'pointer',
+            fontFamily: 'Syne, sans-serif',
+          }}>
+          Skip <ChevronRight size={14} />
+        </button>
       </div>
-    </>
+
+      {/* Question nav bubbles */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {quiz.questions.map((q, idx) => {
+          const bs = getBubbleStyle(idx);
+          return (
+            <button key={q.id}
+              onClick={() => setCurrentQuestion(idx)}
+              style={{
+                width: 34, height: 34, borderRadius: 8,
+                border: `1.5px solid ${bs.border}`,
+                background: bs.bg, color: bs.color,
+                fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'Syne, sans-serif',
+                transition: 'all 0.15s',
+              }}>
+              {idx + 1}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
+        {[
+          { color: '#4f8ef7', label: 'Current / Answered' },
+          { color: '#22c55e', label: 'Correct' },
+          { color: '#ef4444', label: 'Wrong' },
+          { color: '#4a5168', label: 'Not visited' },
+        ].map((l) => (
+          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#8b92a5' }}>
+            <div style={{ width: 10, height: 10, borderRadius: 3, background: l.color, opacity: 0.7 }} />
+            {l.label}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

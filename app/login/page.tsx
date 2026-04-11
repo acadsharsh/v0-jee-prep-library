@@ -1,13 +1,11 @@
 'use client';
 
 import { Navigation } from '@/components/navigation';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { Zap, Mail, Lock, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,92 +16,91 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
+    setError(''); setIsLoading(true);
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+      if (err) { setError(err.message); return; }
+      if (data.session) router.push('/dashboard');
+    } catch { setError('An error occurred during login'); }
+    finally { setIsLoading(false); }
+  };
 
-      if (signInError) {
-        setError(signInError.message);
-        return;
-      }
-
-      if (data.session) {
-        router.push('/dashboard');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('An error occurred during login');
-    } finally {
-      setIsLoading(false);
-    }
+  const inputStyle = {
+    width: '100%', padding: '12px 14px 12px 42px',
+    borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.03)', color: '#f0f2f7',
+    fontSize: 14, fontFamily: 'Syne, sans-serif', outline: 'none',
+    transition: 'border-color 0.2s',
   };
 
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 shadow-lg border border-slate-200">
-          <h1 className="text-3xl font-bold mb-2 text-slate-900">Sign In</h1>
-          <p className="text-slate-600 mb-6">
-            Sign in to save your quiz attempts and track progress
-          </p>
+      <main style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div className="animate-scale-in" style={{
+          width: '100%', maxWidth: 420,
+          background: 'var(--bg-surface)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 20, padding: '44px 36px',
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: 36 }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 12, margin: '0 auto 16px',
+              background: 'linear-gradient(135deg, #4f8ef7, #8b5cf6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Zap size={22} color="white" fill="white" />
+            </div>
+            <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 26, color: '#f0f2f7', marginBottom: 6 }}>Welcome back</h1>
+            <p style={{ color: '#8b92a5', fontSize: 14 }}>Sign in to track your grind</p>
+          </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6 text-sm">
-              {error}
-            </div>
+            <div style={{
+              padding: '12px 16px', borderRadius: 10, marginBottom: 20,
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+              color: '#ef4444', fontSize: 13,
+            }}>{error}</div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="border-slate-200 focus:border-blue-500"
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ position: 'relative' }}>
+              <Mail size={15} color="#4a5168" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <input type="email" placeholder="you@example.com" value={email} required
+                onChange={e => setEmail(e.target.value)} style={inputStyle}
+                onFocus={e => e.target.style.borderColor = 'rgba(79,142,247,0.5)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-slate-200 focus:border-blue-500"
+            <div style={{ position: 'relative' }}>
+              <Lock size={15} color="#4a5168" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <input type="password" placeholder="••••••••" value={password} required
+                onChange={e => setPassword(e.target.value)} style={inputStyle}
+                onFocus={e => e.target.style.borderColor = 'rgba(79,142,247,0.5)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
               />
             </div>
-
-            <Button 
-              type="submit" 
-              disabled={isLoading} 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {isLoading ? 'Signing in...' : 'Sign In'}
-            </Button>
+            <button type="submit" disabled={isLoading} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '13px', borderRadius: 10,
+              background: isLoading ? 'rgba(79,142,247,0.5)' : '#4f8ef7',
+              border: 'none', color: '#fff',
+              fontSize: 15, fontWeight: 700, fontFamily: 'Syne, sans-serif',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 0 24px rgba(79,142,247,0.35)',
+              marginTop: 4,
+            }}>
+              {isLoading ? 'Signing in…' : <><span>Sign in</span><ArrowRight size={16} /></>}
+            </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-slate-200">
-            <p className="text-sm text-slate-600">
-              Don&apos;t have an account?{' '}
-              <a href="/signup" className="text-blue-600 hover:text-blue-700 font-semibold">
-                Create one
-              </a>
-            </p>
-          </div>
-        </Card>
+          <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: '#8b92a5' }}>
+            No account?{' '}
+            <Link href="/signup" style={{ color: '#4f8ef7', fontWeight: 700, textDecoration: 'none' }}>
+              Create one free
+            </Link>
+          </p>
+        </div>
       </main>
     </>
   );

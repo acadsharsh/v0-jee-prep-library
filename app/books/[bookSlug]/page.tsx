@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Navigation } from '@/components/navigation';
 import { ChapterBrowser } from '@/components/chapter-browser';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, BookOpen, Layers } from 'lucide-react';
 import Link from 'next/link';
 
 interface ChaptersData {
@@ -26,49 +25,92 @@ export default function BookPage() {
   const [chapters, setChapters] = useState<ChaptersData>({});
   const [isLoading, setIsLoading] = useState(true);
   const [bookTitle, setBookTitle] = useState('');
+  const [totalChapters, setTotalChapters] = useState(0);
 
   useEffect(() => {
-    const fetchChapters = async () => {
+    const fetch_ = async () => {
       try {
-        const response = await fetch(`/api/books/${bookSlug}/chapters`);
-        const data = await response.json();
+        const [chapRes, booksRes] = await Promise.all([
+          fetch(`/api/books/${bookSlug}/chapters`),
+          fetch('/api/books'),
+        ]);
+        const data = await chapRes.json();
+        const books = await booksRes.json();
         setChapters(data);
-
-        // Fetch book title
-        const booksResponse = await fetch('/api/books');
-        const books = await booksResponse.json();
+        const total = Object.values(data as ChaptersData).reduce((s, arr) => s + arr.length, 0);
+        setTotalChapters(total);
         const book = books.find((b: any) => b.slug === bookSlug);
         if (book) setBookTitle(book.title);
-      } catch (error) {
-        console.error('Failed to fetch chapters:', error);
-      } finally {
-        setIsLoading(false);
-      }
+      } catch (e) { console.error(e); }
+      finally { setIsLoading(false); }
     };
-
-    fetchChapters();
+    fetch_();
   }, [bookSlug]);
+
+  const classCount = Object.keys(chapters).length;
 
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-12">
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="mb-6">
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Back to Library
-            </Button>
+      <main style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px 80px' }}>
+
+          {/* Back */}
+          <Link href="/" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: 13, fontWeight: 600, color: '#8b92a5',
+            textDecoration: 'none', marginBottom: 32,
+            padding: '6px 12px', borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.02)',
+            transition: 'all 0.15s',
+          }}>
+            <ChevronLeft size={14} /> Library
           </Link>
 
-          <div className="mb-12">
-            <h1 className="text-4xl font-bold mb-2">{bookTitle}</h1>
-            <p className="text-muted-foreground">
-              Select a class and chapter to start practicing
-            </p>
+          {/* Header */}
+          <div className="animate-fade-up" style={{ marginBottom: 44 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14, flexShrink: 0,
+                background: 'linear-gradient(135deg, #4f8ef7, #8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <BookOpen size={24} color="white" />
+              </div>
+              <div>
+                <h1 style={{
+                  fontFamily: 'Syne, sans-serif', fontWeight: 800,
+                  fontSize: 34, letterSpacing: '-0.5px',
+                  color: '#f0f2f7', margin: 0, marginBottom: 8,
+                }}>
+                  {bookTitle || bookSlug.toUpperCase()}
+                </h1>
+                {!isLoading && (
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {[
+                      { icon: <Layers size={13} />, label: `${totalChapters} chapters`, color: '#4f8ef7' },
+                      { icon: <BookOpen size={13} />, label: `${classCount} class${classCount !== 1 ? 'es' : ''}`, color: '#8b5cf6' },
+                    ].map((tag, i) => (
+                      <div key={i} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        padding: '4px 12px', borderRadius: 100,
+                        background: `${tag.color}15`,
+                        border: `1px solid ${tag.color}30`,
+                        color: tag.color, fontSize: 12, fontWeight: 600,
+                      }}>
+                        {tag.icon} {tag.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          <ChapterBrowser chapters={chapters} bookSlug={bookSlug} isLoading={isLoading} />
+          <div className="animate-fade-up" style={{ animationDelay: '0.08s' }}>
+            <ChapterBrowser chapters={chapters} bookSlug={bookSlug} isLoading={isLoading} />
+          </div>
         </div>
       </main>
     </>

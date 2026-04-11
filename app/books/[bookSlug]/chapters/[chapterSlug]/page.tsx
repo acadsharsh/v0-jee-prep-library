@@ -5,8 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Navigation } from '@/components/navigation';
 import { QuizInterface } from '@/components/quiz-interface';
 import { QuizJSON } from '@/lib/types';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, BookOpen, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface QuizData {
@@ -20,52 +19,40 @@ export default function ChapterQuizPage() {
   const bookSlug = params.bookSlug as string;
   const chapterSlug = params.chapterSlug as string;
   const [quiz, setQuiz] = useState<QuizData | null>(null);
+  const [chapterTitle, setChapterTitle] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchChapterQuizzes = async () => {
+    const load = async () => {
       try {
-        // Fetch chapters for this book to find the chapter ID
-        const chaptersResponse = await fetch(`/api/books/${bookSlug}/chapters`);
-        const chapters = await chaptersResponse.json();
+        const chapRes = await fetch(`/api/books/${bookSlug}/chapters`);
+        const chapters = await chapRes.json();
 
-        // Find the chapter by slug across all classes
         let chapterId: string | null = null;
+        let title = '';
         for (const classChapters of Object.values(chapters)) {
-          const found = (classChapters as any[]).find((ch) => ch.slug === chapterSlug);
-          if (found) {
-            chapterId = found.id;
-            break;
-          }
+          const found = (classChapters as any[]).find(ch => ch.slug === chapterSlug);
+          if (found) { chapterId = found.id; title = found.title; break; }
         }
 
         if (!chapterId) throw new Error('Chapter not found');
+        setChapterTitle(title);
 
-        // Fetch quiz by chapter_id
-        const quizResponse = await fetch(`/api/quizzes/${chapterId}`);
-
-        if (!quizResponse.ok) {
-          const errData = await quizResponse.json();
-          throw new Error(errData.error || 'Failed to fetch quiz');
+        const quizRes = await fetch(`/api/quizzes/${chapterId}`);
+        if (!quizRes.ok) {
+          const e = await quizRes.json();
+          throw new Error(e.error || 'Failed to fetch quiz');
         }
-
-        const quizData = await quizResponse.json();
-
-        // ✅ Actually set the quiz state
-        setQuiz({
-          id: quizData.id,
-          content: quizData.content,
-        });
-      } catch (err: any) {
-        console.error('Failed to fetch quiz:', err);
-        setError(err.message);
+        const quizData = await quizRes.json();
+        setQuiz({ id: quizData.id, content: quizData.content });
+      } catch (e: any) {
+        setError(e.message);
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchChapterQuizzes();
+    load();
   }, [bookSlug, chapterSlug]);
 
   const handleQuizSubmit = async (answers: { [key: string]: string }, timeTaken: number) => {
@@ -76,38 +63,75 @@ export default function ChapterQuizPage() {
         body: JSON.stringify({ quizId: quiz?.id, answers, timeTaken }),
       });
       router.push(`/books/${bookSlug}`);
-    } catch (error) {
-      console.error('Failed to submit quiz:', error);
-    }
+    } catch (e) { console.error(e); }
   };
 
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-12">
-          <Link href={`/books/${bookSlug}`}>
-            <Button variant="ghost" size="sm" className="mb-6">
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Back to Chapters
-            </Button>
+      <main style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '36px 24px 80px' }}>
+
+          {/* Back */}
+          <Link href={`/books/${bookSlug}`} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: 13, fontWeight: 600, color: '#8b92a5',
+            textDecoration: 'none', marginBottom: 32,
+            padding: '6px 12px', borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.02)',
+          }}>
+            <ChevronLeft size={14} /> Back to chapters
           </Link>
 
           {isLoading ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Loading quiz...</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: 16 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: '50%',
+                border: '3px solid rgba(255,255,255,0.06)',
+                borderTopColor: '#4f8ef7',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              <p style={{ color: '#8b92a5', fontSize: 14 }}>Loading quiz…</p>
             </div>
           ) : quiz ? (
-            <QuizInterface quiz={quiz.content} quizId={quiz.id} onSubmit={handleQuizSubmit} />
+            <div className="animate-fade-up">
+              <QuizInterface quiz={quiz.content} quizId={quiz.id} onSubmit={handleQuizSubmit} />
+            </div>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">No quiz available for this chapter yet.</p>
-              {error && (
-                <p className="text-sm text-red-500 mb-2">{error}</p>
-              )}
-              <p className="text-sm text-muted-foreground">
-                Check back soon or visit another chapter!
+            <div style={{
+              textAlign: 'center', padding: '80px 24px',
+              background: 'var(--bg-surface)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 16,
+            }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14,
+                background: 'rgba(245,158,11,0.1)',
+                border: '1px solid rgba(245,158,11,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 20px',
+              }}>
+                <AlertCircle size={24} color="#f59e0b" />
+              </div>
+              <h3 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 22, color: '#f0f2f7', marginBottom: 10 }}>
+                No quiz yet
+              </h3>
+              <p style={{ color: '#8b92a5', fontSize: 14, marginBottom: 8 }}>
+                This chapter doesn't have a quiz uploaded yet.
               </p>
+              {error && <p style={{ fontSize: 12, color: '#ef4444', marginBottom: 20 }}>{error}</p>}
+              <Link href={`/books/${bookSlug}`} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '10px 20px', borderRadius: 9,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                color: '#f0f2f7', fontSize: 13, fontWeight: 700,
+                textDecoration: 'none', fontFamily: 'Syne, sans-serif',
+              }}>
+                <BookOpen size={14} /> Other chapters
+              </Link>
             </div>
           )}
         </div>
