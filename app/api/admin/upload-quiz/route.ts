@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       .from('books')
       .select('id')
       .eq('slug', quiz.book_slug)
-      .single();
+      .maybeSingle(); // safer than .single()
 
     if (existingBook) {
       bookId = existingBook.id;
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (bookError) throw bookError;
-      bookId = newBook.id;
+      bookId = newBook!.id;
     }
 
     // Check if chapter exists, create if not
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       .eq('book_id', bookId)
       .eq('class_identifier', quiz.class_identifier)
       .eq('chapter_number', quiz.chapter_number)
-      .single();
+      .maybeSingle(); // safer than .single()
 
     if (existingChapter) {
       chapterId = existingChapter.id;
@@ -71,22 +71,28 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (chapterError) throw chapterError;
-      chapterId = newChapter.id;
+      chapterId = newChapter!.id;
     }
 
-    // Store the quiz JSON in a temporary location (you'd upload to Vercel Blob in production)
+    // Encode quiz JSON as base64 data URI
     const jsonBlobUrl = `data:application/json;base64,${Buffer.from(JSON.stringify(quiz)).toString('base64')}`;
 
-    // Create quiz record
-    const { data: newQuiz, error: quizError } = await supabase
+    // UPSERT: if a quiz already exists for this chapter, replace it instead of inserting a duplicate
+    const { data: upsertedQuiz, error: quizError } = await supabase
       .from('quizzes')
-      .insert({
-        chapter_id: chapterId,
-        json_blob_url: jsonBlobUrl,
-        difficulty: quiz.difficulty,
-        title: quiz.quiz_title,
-        description: quiz.quiz_description,
-      })
+      .upsert(
+        {
+          chapter_id: chapterId,
+          json_blob_url: jsonBlobUrl,
+          difficulty: quiz.difficulty,
+          title: quiz.quiz_title,
+          description: quiz.quiz_description,
+        },
+        {
+          onConflict: 'chapter_id', // requires UNIQUE constraint on chapter_id (see note below)
+          ignoreDuplicates: false,  // update existing row if found
+        }
+      )
       .select('id')
       .single();
 
@@ -95,8 +101,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        quizId: newQuiz.id,
-        message: `Quiz "${quiz.quiz_title}" created successfully!`,
+        quizId: upsertedQuiz.id,
+        message: `Quiz "${quiz.quiz_title}" saved successfully!`,
       },
       { status: 201 }
     );
