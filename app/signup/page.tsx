@@ -4,8 +4,8 @@ import { Navigation } from '@/components/navigation';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Zap, Mail, Lock, User, ArrowRight, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { ArrowRight, CheckCircle } from 'lucide-react';
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState('');
@@ -29,82 +29,53 @@ export default function SignupPage() {
         setSuccess('Account created! Check your email to verify.');
         setTimeout(() => router.push('/login'), 2500);
       }
-    } catch { setError('An error occurred during signup'); }
+    } catch { setError('Signup failed'); }
     finally { setIsLoading(false); }
-  };
-
-  const inputStyle = {
-    width: '100%', padding: '12px 14px 12px 42px',
-    borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)',
-    background: 'rgba(255,255,255,0.03)', color: '#f0f2f7',
-    fontSize: 14, fontFamily: 'Syne, sans-serif', outline: 'none',
-    transition: 'border-color 0.2s',
   };
 
   return (
     <>
       <Navigation />
-      <main style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div className="animate-scale-in" style={{
-          width: '100%', maxWidth: 420,
-          background: 'var(--bg-surface)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 20, padding: '44px 36px',
+      <main style={{ minHeight: 'calc(100vh - 48px)', background: 'var(--bg-0)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div className="fade-in" style={{
+          width: '100%', maxWidth: 380,
+          background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8,
+          overflow: 'hidden',
         }}>
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 12, margin: '0 auto 16px',
-              background: 'linear-gradient(135deg, #22c55e, #4f8ef7)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Zap size={22} color="white" fill="white" />
-            </div>
-            <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 26, color: '#f0f2f7', marginBottom: 6 }}>Start your grind</h1>
-            <p style={{ color: '#8b92a5', fontSize: 14 }}>Create your free JEE prep account</p>
+          <div style={{ padding: '24px 24px 20px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--tx-1)', marginBottom: 4 }}>Create account</div>
+            <div style={{ fontSize: 13, color: 'var(--tx-3)' }}>Start tracking your JEE prep</div>
           </div>
-
-          {error && (
-            <div style={{ padding: '12px 16px', borderRadius: 10, marginBottom: 20, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontSize: 13 }}>{error}</div>
-          )}
-          {success && (
-            <div style={{ padding: '12px 16px', borderRadius: 10, marginBottom: 20, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#22c55e', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
-              <CheckCircle size={15} />{success}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[
-              { icon: <User size={15} />, type: 'text', ph: 'Full name', val: fullName, set: setFullName, req: false },
-              { icon: <Mail size={15} />, type: 'email', ph: 'Email address', val: email, set: setEmail, req: true },
-              { icon: <Lock size={15} />, type: 'password', ph: 'Password', val: password, set: setPassword, req: true },
-              { icon: <Lock size={15} />, type: 'password', ph: 'Confirm password', val: confirmPassword, set: setConfirmPassword, req: true },
-            ].map((f, i) => (
-              <div key={i} style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#4a5168', pointerEvents: 'none' }}>{f.icon}</span>
-                <input type={f.type} placeholder={f.ph} value={f.val} required={f.req}
-                  onChange={e => f.set(e.target.value)} style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = 'rgba(79,142,247,0.5)'}
-                  onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
-                />
+          <div style={{ padding: 24 }}>
+            {error && <div style={{ padding: '9px 12px', borderRadius: 5, marginBottom: 14, background: 'var(--red-dim)', border: '1px solid var(--red)', color: 'var(--red)', fontSize: 12.5 }}>{error}</div>}
+            {success && (
+              <div style={{ padding: '9px 12px', borderRadius: 5, marginBottom: 14, background: 'var(--green-dim)', border: '1px solid var(--green)', color: 'var(--green)', fontSize: 12.5, display: 'flex', gap: 7, alignItems: 'center' }}>
+                <CheckCircle size={13} />{success}
               </div>
-            ))}
-            <button type="submit" disabled={isLoading} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              padding: '13px', borderRadius: 10,
-              background: isLoading ? 'rgba(34,197,94,0.5)' : '#22c55e',
-              border: 'none', color: '#fff',
-              fontSize: 15, fontWeight: 700, fontFamily: 'Syne, sans-serif',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              boxShadow: '0 0 24px rgba(34,197,94,0.3)', marginTop: 6,
-            }}>
-              {isLoading ? 'Creating…' : <><span>Create account</span><ArrowRight size={16} /></>}
-            </button>
-          </form>
-
-          <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: '#8b92a5' }}>
-            Already have an account?{' '}
-            <Link href="/login" style={{ color: '#4f8ef7', fontWeight: 700, textDecoration: 'none' }}>Sign in</Link>
-          </p>
+            )}
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { label: 'Full name', type: 'text', ph: 'John Doe', val: fullName, set: setFullName, req: false },
+                { label: 'Email', type: 'email', ph: 'you@example.com', val: email, set: setEmail, req: true },
+                { label: 'Password', type: 'password', ph: '••••••••', val: password, set: setPassword, req: true },
+                { label: 'Confirm password', type: 'password', ph: '••••••••', val: confirmPassword, set: setConfirmPassword, req: true },
+              ].map((f, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 12, color: 'var(--tx-3)', fontWeight: 500 }}>{f.label}</label>
+                  <input type={f.type} placeholder={f.ph} value={f.val} required={f.req}
+                    onChange={e => f.set(e.target.value)} style={{ width: '100%' }} />
+                </div>
+              ))}
+              <button type="submit" disabled={isLoading} className="btn-acc"
+                style={{ marginTop: 6, justifyContent: 'center', opacity: isLoading ? 0.6 : 1 }}>
+                {isLoading ? 'Creating…' : <><span>Create account</span><ArrowRight size={13} /></>}
+              </button>
+            </form>
+            <p style={{ fontSize: 12.5, color: 'var(--tx-3)', marginTop: 16, textAlign: 'center' }}>
+              Have an account?{' '}
+              <Link href="/login" style={{ color: 'var(--acc)', fontWeight: 600 }}>Sign in</Link>
+            </p>
+          </div>
         </div>
       </main>
     </>

@@ -1,123 +1,90 @@
 'use client';
 
 import Link from 'next/link';
-import { Zap, LogOut, LogIn, LayoutDashboard, Shield } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
+import { BookOpen, LayoutDashboard, LogOut, LogIn, ShieldCheck } from 'lucide-react';
 
 export function Navigation() {
   const { user, isAdmin, logout, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = async () => {
-    await logout();
-    router.push('/');
-  };
+  const handleLogout = async () => { await logout(); router.push('/'); };
 
-  const isActive = (href: string) => pathname === href;
+  const links = [
+    { href: '/', label: 'Library', icon: <BookOpen size={15} /> },
+    ...(user ? [{ href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={15} /> }] : []),
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin', icon: <ShieldCheck size={15} /> }] : []),
+  ];
 
   return (
     <nav style={{
-      position: 'sticky', top: 0, zIndex: 50,
-      background: 'rgba(10,12,16,0.85)',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      height: 48,
+      background: 'var(--bg-1)',
+      borderBottom: '1px solid var(--border)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '0 20px',
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
     }}>
-      <div style={{
-        maxWidth: 1200, margin: '0 auto',
-        padding: '0 24px',
-        height: 60,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        {/* Logo */}
+      {/* Left — logo + links */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Link href="/" style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          textDecoration: 'none',
+          fontWeight: 700, fontSize: 14,
+          color: 'var(--tx-1)',
+          marginRight: 20,
+          display: 'flex', alignItems: 'center', gap: 7,
         }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'linear-gradient(135deg, #4f8ef7, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Zap size={16} color="white" fill="white" />
-          </div>
           <span style={{
-            fontFamily: 'Syne, sans-serif',
-            fontWeight: 800, fontSize: 16,
-            color: '#f0f2f7',
-            letterSpacing: '-0.3px',
-          }}>
-            JEE<span style={{ color: '#4f8ef7' }}>Prep</span>
-          </span>
+            width: 22, height: 22, borderRadius: 5,
+            background: 'var(--acc)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 800, color: '#fff',
+          }}>J</span>
+          JEEPrep
         </Link>
 
-        {/* Nav links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {[
-            { href: '/', label: 'Library' },
-            ...(user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
-            ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
-          ].map(({ href, label }) => (
-            <Link key={href} href={href} style={{
-              padding: '6px 14px',
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 500,
-              fontFamily: 'Syne, sans-serif',
-              textDecoration: 'none',
-              color: isActive(href) ? '#f0f2f7' : '#8b92a5',
-              background: isActive(href) ? 'rgba(255,255,255,0.07)' : 'transparent',
-              border: isActive(href) ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
-              transition: 'all 0.15s',
-            }}>
-              {label}
-            </Link>
-          ))}
+        {links.map(l => (
+          <Link key={l.href} href={l.href} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '5px 12px', borderRadius: 5,
+            fontSize: 13, fontWeight: 500,
+            color: pathname === l.href ? 'var(--tx-1)' : 'var(--tx-3)',
+            background: pathname === l.href ? 'var(--bg-3)' : 'transparent',
+            transition: 'all 0.12s',
+          }}>
+            {l.icon} {l.label}
+          </Link>
+        ))}
+      </div>
 
-          {!loading && (
+      {/* Right — auth */}
+      {!loading && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {user ? (
             <>
-              {user ? (
-                <button onClick={handleLogout} style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontFamily: 'Syne, sans-serif',
-                  fontWeight: 500,
-                  background: 'transparent',
-                  border: '1px solid rgba(239,68,68,0.25)',
-                  color: '#ef4444',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  marginLeft: 8,
-                }}>
-                  <LogOut size={13} />
-                  Sign out
-                </button>
-              ) : (
-                <Link href="/login" style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '6px 16px',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontFamily: 'Syne, sans-serif',
-                  fontWeight: 600,
-                  background: '#4f8ef7',
-                  color: '#fff',
-                  textDecoration: 'none',
-                  marginLeft: 8,
-                  transition: 'all 0.15s',
-                }}>
-                  <LogIn size={13} />
-                  Sign in
-                </Link>
-              )}
+              <span style={{ fontSize: 12, color: 'var(--tx-3)' }}>{user.email}</span>
+              <button onClick={handleLogout} className="btn-ghost" style={{ padding: '4px 12px', fontSize: 12 }}>
+                <LogOut size={12} /> Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" style={{
+                fontSize: 13, fontWeight: 500, color: 'var(--tx-2)',
+                padding: '4px 12px',
+              }}>Sign in</Link>
+              <Link href="/signup" className="btn-acc" style={{ padding: '5px 14px', fontSize: 12 }}>
+                Get started
+              </Link>
             </>
           )}
         </div>
-      </div>
+      )}
     </nav>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Chapter } from '@/lib/types';
+import { ChevronRight } from 'lucide-react';
 
 interface ChapterBrowserProps {
   chapters: { [classId: string]: Chapter[] };
@@ -9,7 +10,7 @@ interface ChapterBrowserProps {
   isLoading: boolean;
 }
 
-const classLabels: Record<string, string> = {
+const CLASS_LABELS: Record<string, string> = {
   '11': 'Class XI',
   '12': 'Class XII',
   'common': 'Common',
@@ -19,99 +20,59 @@ const classLabels: Record<string, string> = {
 export function ChapterBrowser({ chapters, bookSlug, isLoading }: ChapterBrowserProps) {
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-        {[...Array(2)].map((_, i) => (
-          <div key={i}>
-            <div style={{ width: 120, height: 20, borderRadius: 6, background: 'rgba(255,255,255,0.04)', marginBottom: 16 }} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[...Array(5)].map((_, j) => (
-                <div key={j} style={{ height: 52, borderRadius: 10, background: 'rgba(255,255,255,0.03)' }} />
-              ))}
-            </div>
-          </div>
+      <div>
+        {[...Array(8)].map((_, i) => (
+          <div key={i} style={{ height: 50, borderBottom: '1px solid var(--border)', background: 'var(--bg-1)' }} />
         ))}
       </div>
     );
   }
 
-  const classColors: Record<string, string> = { '11': '#4f8ef7', '12': '#8b5cf6', 'common': '#22c55e', '11_and_12': '#f59e0b' };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       {Object.entries(chapters).map(([classId, classChapters]) => (
         <div key={classId}>
-          {/* Class header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-            <div style={{
-              width: 3, height: 20, borderRadius: 2,
-              background: classColors[classId] ?? '#4f8ef7',
-            }} />
-            <h2 style={{
-              fontFamily: 'Syne, sans-serif', fontWeight: 800,
-              fontSize: 18, color: '#f0f2f7', margin: 0,
-              letterSpacing: '-0.3px',
-            }}>
-              {classLabels[classId] || classId}
-            </h2>
-            <span style={{
-              fontSize: 11, fontWeight: 700, padding: '3px 10px',
-              borderRadius: 100,
-              background: `${classColors[classId] ?? '#4f8ef7'}18`,
-              color: classColors[classId] ?? '#4f8ef7',
-            }}>
+          {/* Class label */}
+          <div style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.07em',
+            textTransform: 'uppercase', color: 'var(--tx-3)',
+            padding: '0 0 10px',
+            borderBottom: '1px solid var(--border)',
+            marginBottom: 0,
+          }}>
+            {CLASS_LABELS[classId] || classId}
+            <span style={{ marginLeft: 8, color: 'var(--bg-4)', fontWeight: 500 }}>
               {classChapters.length} chapters
             </span>
           </div>
 
-          {/* Chapter list */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 8 }}>
+          <div style={{ border: '1px solid var(--border)', borderTop: 'none', borderRadius: '0 0 6px 6px', overflow: 'hidden', background: 'var(--bg-1)' }}>
             {classChapters
               .sort((a, b) => a.chapter_number - b.chapter_number)
-              .map((chapter) => (
-                <Link
-                  key={chapter.id}
-                  href={`/books/${bookSlug}/chapters/${chapter.slug}`}
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '14px 18px',
-                    borderRadius: 11,
-                    background: 'var(--bg-surface)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    cursor: 'pointer',
-                    transition: 'all 0.18s',
-                  }}
-                    onMouseEnter={e => {
-                      const el = e.currentTarget as HTMLDivElement;
-                      el.style.background = 'var(--bg-elevated)';
-                      el.style.borderColor = 'rgba(255,255,255,0.1)';
-                      el.style.transform = 'translateX(3px)';
-                    }}
-                    onMouseLeave={e => {
-                      const el = e.currentTarget as HTMLDivElement;
-                      el.style.background = 'var(--bg-surface)';
-                      el.style.borderColor = 'rgba(255,255,255,0.05)';
-                      el.style.transform = 'translateX(0)';
+              .map((ch, idx) => (
+                <Link key={ch.id} href={`/books/${bookSlug}/chapters/${ch.slug}`}>
+                  <div
+                    className="row-item"
+                    style={{
+                      borderBottom: idx < classChapters.length - 1 ? '1px solid var(--border)' : 'none',
+                      gap: 14,
                     }}
                   >
-                    <div style={{
-                      width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                      background: `${classColors[classId] ?? '#4f8ef7'}15`,
-                      border: `1px solid ${classColors[classId] ?? '#4f8ef7'}30`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 800, color: classColors[classId] ?? '#4f8ef7',
+                    {/* Chapter number */}
+                    <span style={{
+                      minWidth: 28, fontSize: 11.5,
+                      fontWeight: 600,
+                      color: 'var(--tx-3)',
                       fontFamily: 'JetBrains Mono, monospace',
                     }}>
-                      {chapter.chapter_number}
-                    </div>
-                    <span style={{
-                      flex: 1, fontSize: 14, fontWeight: 600,
-                      color: '#d0d4e0', fontFamily: 'Syne, sans-serif',
-                    }}>
-                      {chapter.title}
+                      {String(ch.chapter_number).padStart(2, '0')}
                     </span>
-                    <span style={{ fontSize: 16, color: '#4a5168' }}>›</span>
+
+                    <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: 'var(--tx-1)' }}>
+                      {ch.title}
+                    </span>
+
+                    <ChevronRight size={13} color="var(--tx-3)" />
                   </div>
                 </Link>
               ))}

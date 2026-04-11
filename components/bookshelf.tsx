@@ -4,131 +4,85 @@ import Link from 'next/link';
 import { Book } from '@/lib/types';
 import { BookOpen, ChevronRight } from 'lucide-react';
 
-interface BookshelfProps {
-  books: Book[];
-  isLoading: boolean;
-}
+interface BookshelfProps { books: Book[]; isLoading: boolean; }
 
-const BOOK_COLORS = [
-  { from: '#4f8ef7', to: '#8b5cf6' },
-  { from: '#22c55e', to: '#4f8ef7' },
-  { from: '#f59e0b', to: '#ef4444' },
-  { from: '#8b5cf6', to: '#ec4899' },
-  { from: '#06b6d4', to: '#22c55e' },
-];
+const SUBJECT_COLORS: Record<string, string> = {
+  physics:   '#5b8ef0',
+  chemistry: '#4caf7d',
+  maths:     '#c97af0',
+  math:      '#c97af0',
+  default:   '#e8824a',
+};
+
+function getColor(title: string) {
+  const t = title.toLowerCase();
+  for (const k of Object.keys(SUBJECT_COLORS)) {
+    if (t.includes(k)) return SUBJECT_COLORS[k];
+  }
+  return SUBJECT_COLORS.default;
+}
 
 export function Bookshelf({ books, isLoading }: BookshelfProps) {
   if (isLoading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-        {[...Array(6)].map((_, i) => (
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {[...Array(4)].map((_, i) => (
           <div key={i} style={{
-            height: 280, borderRadius: 14,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
-            border: '1px solid rgba(255,255,255,0.06)',
-            animation: 'pulse 1.5s ease-in-out infinite',
+            height: 52, borderBottom: '1px solid var(--border)',
+            background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
           }} />
         ))}
       </div>
     );
   }
 
-  if (books.length === 0) {
+  if (!books.length) {
     return (
-      <div style={{
-        textAlign: 'center', padding: '80px 24px',
-        borderRadius: 16,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px dashed rgba(255,255,255,0.08)',
-      }}>
-        <BookOpen size={40} color="rgba(255,255,255,0.15)" style={{ margin: '0 auto 16px' }} />
-        <p style={{ color: '#8b92a5', fontSize: 15 }}>No books available yet</p>
+      <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--tx-3)', fontSize: 13 }}>
+        <BookOpen size={28} style={{ margin: '0 auto 10px', display: 'block', opacity: 0.3 }} />
+        No books available yet
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+    <div style={{
+      border: '1px solid var(--border)',
+      borderRadius: 8,
+      overflow: 'hidden',
+      background: 'var(--bg-1)',
+    }}>
       {books.map((book, idx) => {
-        const colors = BOOK_COLORS[idx % BOOK_COLORS.length];
+        const color = getColor(book.title);
         return (
-          <Link key={book.id} href={`/books/${book.slug}`} style={{ textDecoration: 'none' }}>
-            <div style={{
-              borderRadius: 14,
-              overflow: 'hidden',
-              background: 'var(--bg-surface)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              cursor: 'pointer',
-              transition: 'all 0.25s cubic-bezier(.22,.68,0,1.2)',
-            }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.transform = 'translateY(-4px)';
-                el.style.borderColor = 'rgba(255,255,255,0.14)';
-                el.style.boxShadow = '0 20px 60px rgba(0,0,0,0.4)';
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.transform = 'translateY(0)';
-                el.style.borderColor = 'rgba(255,255,255,0.06)';
-                el.style.boxShadow = 'none';
+          <Link key={book.id} href={`/books/${book.slug}`}>
+            <div
+              className="row-item"
+              style={{
+                borderBottom: idx < books.length - 1 ? '1px solid var(--border)' : 'none',
+                gap: 14,
               }}
             >
-              {/* Cover */}
+              {/* Color dot */}
               <div style={{
-                height: 200,
-                background: book.cover_image_url
-                  ? undefined
-                  : `linear-gradient(135deg, ${colors.from}, ${colors.to})`,
-                position: 'relative',
-                overflow: 'hidden',
+                width: 32, height: 32, borderRadius: 6, flexShrink: 0,
+                background: `${color}18`,
+                border: `1px solid ${color}30`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                {book.cover_image_url ? (
-                  <img src={book.cover_image_url} alt={book.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{
-                    width: '100%', height: '100%',
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center',
-                    gap: 12,
-                  }}>
-                    <div style={{
-                      width: 56, height: 56, borderRadius: 14,
-                      background: 'rgba(255,255,255,0.15)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <BookOpen size={26} color="rgba(255,255,255,0.9)" />
-                    </div>
-                    <span style={{
-                      fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)',
-                      textAlign: 'center', padding: '0 16px',
-                      fontFamily: 'Syne, sans-serif',
-                    }}>{book.title}</span>
-                  </div>
-                )}
-                {/* Overlay gradient */}
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  background: 'linear-gradient(to top, rgba(17,19,24,0.8) 0%, transparent 50%)',
-                }} />
+                <BookOpen size={14} color={color} />
               </div>
 
-              {/* Footer */}
-              <div style={{
-                padding: '14px 16px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f2f7', fontFamily: 'Syne, sans-serif' }}>
-                    {book.title}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#8b92a5', marginTop: 2 }}>
-                    View chapters →
-                  </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--tx-1)' }}>
+                  {book.title}
                 </div>
-                <ChevronRight size={16} color="#8b92a5" />
+                <div style={{ fontSize: 12, color: 'var(--tx-3)', marginTop: 1 }}>
+                  Chapter-wise quizzes
+                </div>
               </div>
+
+              <ChevronRight size={14} color="var(--tx-3)" />
             </div>
           </Link>
         );

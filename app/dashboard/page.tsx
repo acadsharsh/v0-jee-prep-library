@@ -8,31 +8,18 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { ArrowRight, TrendingUp } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
-interface AttemptData {
-  title: string;
-  score: number;
-  date: string;
-  quiz_id: string;
-}
+interface AttemptData { title: string; score: number; date: string; quiz_id: string; }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload?.length) {
-    return (
-      <div style={{
-        background: 'var(--bg-elevated)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 10, padding: '10px 14px',
-      }}>
-        <div style={{ fontSize: 12, color: '#8b92a5', marginBottom: 4 }}>{label}</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#4f8ef7', fontFamily: 'Syne, sans-serif' }}>
-          {payload[0].value}%
-        </div>
-      </div>
-    );
-  }
-  return null;
+const TT = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-mid)', borderRadius: 5, padding: '7px 12px' }}>
+      <div style={{ fontSize: 11, color: 'var(--tx-3)', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--tx-1)' }}>{payload[0].value}%</div>
+    </div>
+  );
 };
 
 export default function DashboardPage() {
@@ -45,7 +32,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (loading) return;
     if (!user) { router.push('/login'); return; }
-    const load = async () => {
+    (async () => {
       try {
         const { data } = await supabase
           .from('quiz_attempts')
@@ -62,163 +49,101 @@ export default function DashboardPage() {
           }));
           setAttempts(fmt);
           const seen = new Map();
-          fmt.forEach(a => { if (!seen.has(a.quiz_id)) seen.set(a.quiz_id, { name: a.title.split(' ').slice(0,2).join(' '), score: a.score }); });
+          fmt.forEach(a => { if (!seen.has(a.quiz_id)) seen.set(a.quiz_id, { name: a.title.split(' ').slice(0, 3).join(' '), score: a.score }); });
           setChartData(Array.from(seen.values()).slice(0, 6));
         }
       } catch (e) { console.error(e); }
       finally { setIsLoading(false); }
-    };
-    load();
+    })();
   }, [user, loading, router]);
 
-  const getScoreColor = (s: number) => s >= 75 ? '#22c55e' : s >= 50 ? '#f59e0b' : '#ef4444';
+  const scoreColor = (s: number) => s >= 75 ? 'var(--green)' : s >= 50 ? 'var(--acc)' : 'var(--red)';
+  const scoreHex = (s: number) => s >= 75 ? '#4caf7d' : s >= 50 ? '#e8824a' : '#e05c5c';
 
-  if (loading || isLoading) {
-    return (
-      <>
-        <Navigation />
-        <main style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%',
-              border: '3px solid rgba(255,255,255,0.08)',
-              borderTopColor: '#4f8ef7',
-              animation: 'spin 0.8s linear infinite',
-              margin: '0 auto 16px',
-            }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            <p style={{ color: '#8b92a5', fontSize: 14 }}>Loading your dashboard…</p>
-          </div>
-        </main>
-      </>
-    );
-  }
+  if (loading || isLoading) return (
+    <>
+      <Navigation />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 48px)', color: 'var(--tx-3)', fontSize: 13 }}>
+        Loading…
+      </div>
+    </>
+  );
 
   return (
     <>
       <Navigation />
-      <main style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 24px' }}>
+      <main style={{ background: 'var(--bg-0)', minHeight: 'calc(100vh - 48px)' }}>
 
-          {/* Header */}
-          <div className="animate-fade-up" style={{ marginBottom: 40 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#4f8ef7', marginBottom: 8, textTransform: 'uppercase' }}>
-              Dashboard
-            </div>
-            <h1 style={{
-              fontFamily: 'Syne, sans-serif', fontWeight: 800,
-              fontSize: 36, letterSpacing: '-0.5px',
-              color: '#f0f2f7',
-            }}>
-              Your progress
-            </h1>
-          </div>
+        {/* Page header */}
+        <div style={{ padding: '20px 32px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 12, color: 'var(--tx-3)', marginBottom: 4 }}>Overview</div>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--tx-1)', marginBottom: 16 }}>Dashboard</h1>
+        </div>
 
-          {/* Stats */}
-          <div className="animate-fade-up" style={{ marginBottom: 28, animationDelay: '0.05s' }}>
+        <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 960 }}>
+
+          {/* Stats strip */}
+          <div className="fade-in">
             <StatsDashboard />
           </div>
 
-          {/* Chart + Recent */}
-          <div style={{ display: 'grid', gridTemplateColumns: chartData.length > 0 ? '1.4fr 1fr' : '1fr', gap: 16, marginBottom: 16 }}>
+          {/* Chart + Recent — two columns */}
+          <div style={{ display: 'grid', gridTemplateColumns: chartData.length ? '1.5fr 1fr' : '1fr', gap: 16 }}>
 
-            {/* Chart */}
             {chartData.length > 0 && (
-              <div className="animate-fade-up" style={{
-                background: 'var(--bg-surface)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 14, padding: 24,
-                animationDelay: '0.1s',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-                  <TrendingUp size={16} color="#4f8ef7" />
-                  <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 15, color: '#f0f2f7' }}>
-                    Score by quiz
-                  </span>
+              <div className="fade-in" style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+                <div className="pane-header">Score by quiz</div>
+                <div style={{ padding: '16px 20px 20px' }}>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={chartData} barCategoryGap="35%">
+                      <XAxis dataKey="name" stroke="transparent" tick={{ fill: '#5c6273', fontSize: 11, fontFamily: 'Plus Jakarta Sans' }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 100]} stroke="transparent" tick={{ fill: '#5c6273', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip content={<TT />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                      <Bar dataKey="score" radius={[3, 3, 0, 0]}>
+                        {chartData.map((e, i) => <Cell key={i} fill={scoreHex(e.score)} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={chartData} barCategoryGap="30%">
-                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.15)" tick={{ fill: '#8b92a5', fontSize: 11, fontFamily: 'Syne' }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 100]} stroke="rgba(255,255,255,0.05)" tick={{ fill: '#8b92a5', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                    <Bar dataKey="score" radius={[6, 6, 0, 0]}>
-                      {chartData.map((e, i) => (
-                        <Cell key={i} fill={getScoreColor(e.score)} opacity={0.85} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
               </div>
             )}
 
             {/* Recent attempts */}
-            <div className="animate-fade-up" style={{
-              background: 'var(--bg-surface)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 14, padding: 24,
-              animationDelay: '0.15s',
-            }}>
-              <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 15, color: '#f0f2f7', marginBottom: 20 }}>
-                Recent attempts
-              </div>
-
-              {attempts.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="fade-in" style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+              <div className="pane-header">Recent attempts</div>
+              {attempts.length ? (
+                <div>
                   {attempts.slice(0, 6).map((a, i) => (
-                    <div key={i} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid rgba(255,255,255,0.04)',
-                      transition: 'all 0.15s',
+                    <div key={i} className="row-item" style={{
+                      borderBottom: i < Math.min(attempts.length, 6) - 1 ? '1px solid var(--border)' : 'none',
+                      justifyContent: 'space-between',
                     }}>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f2f7', fontFamily: 'Syne, sans-serif' }}>
-                          {a.title.length > 24 ? a.title.slice(0, 24) + '…' : a.title}
+                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--tx-1)' }}>
+                          {a.title.length > 28 ? a.title.slice(0, 28) + '…' : a.title}
                         </div>
-                        <div style={{ fontSize: 11, color: '#8b92a5', marginTop: 2 }}>{a.date}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--tx-3)', marginTop: 2 }}>{a.date}</div>
                       </div>
-                      <div style={{
-                        fontSize: 16, fontWeight: 800,
-                        fontFamily: 'Syne, sans-serif',
-                        color: getScoreColor(a.score),
-                      }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: scoreColor(a.score) }}>
                         {a.score}%
-                      </div>
+                      </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <p style={{ color: '#8b92a5', fontSize: 14, marginBottom: 16 }}>No attempts yet</p>
-                  <Link href="/" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '9px 18px', borderRadius: 8,
-                    background: '#4f8ef7', color: '#fff',
-                    fontSize: 13, fontWeight: 700,
-                    textDecoration: 'none', fontFamily: 'Syne, sans-serif',
-                  }}>
-                    Start a quiz <ArrowRight size={13} />
+                <div style={{ padding: '32px 20px', textAlign: 'center' }}>
+                  <p style={{ color: 'var(--tx-3)', fontSize: 13, marginBottom: 14 }}>No attempts yet</p>
+                  <Link href="/" className="btn-acc" style={{ fontSize: 12 }}>
+                    Start a quiz <ArrowRight size={12} />
                   </Link>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-            <Link href="/" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '9px 18px', borderRadius: 8,
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: '#8b92a5',
-              fontSize: 13, fontWeight: 600,
-              textDecoration: 'none', fontFamily: 'Syne, sans-serif',
-            }}>
-              ← Back to library
-            </Link>
-          </div>
+          <Link href="/" className="btn-ghost" style={{ width: 'fit-content', fontSize: 12 }}>
+            ← Back to library
+          </Link>
         </div>
       </main>
     </>
