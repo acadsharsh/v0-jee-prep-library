@@ -21,16 +21,11 @@ export default function ChapterQuizPage() {
   const chapterSlug = params.chapterSlug as string;
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchChapterQuizzes = async () => {
       try {
-        const response = await fetch('/api/books');
-        const books = await response.json();
-        const book = books.find((b: any) => b.slug === bookSlug);
-
-        if (!book) throw new Error('Book not found');
-
         // Fetch chapters for this book to find the chapter ID
         const chaptersResponse = await fetch(`/api/books/${bookSlug}/chapters`);
         const chapters = await chaptersResponse.json();
@@ -47,16 +42,24 @@ export default function ChapterQuizPage() {
 
         if (!chapterId) throw new Error('Chapter not found');
 
-        // For now, we'll fetch the first quiz for this chapter
-        // In production, you'd get all quizzes and let user choose, or combine them
-        const quizzesResponse = await fetch(
-          `/api/quizzes/${chapterId}?chapter_id=${chapterId}`
-        );
-        // This is a simplified version - in production you'd have an endpoint to get quizzes by chapter
-        // For now, we'll just navigate to a "no quiz yet" state
-        setQuiz(null);
-      } catch (error) {
-        console.error('Failed to fetch quiz:', error);
+        // Fetch quiz by chapter_id
+        const quizResponse = await fetch(`/api/quizzes/${chapterId}`);
+
+        if (!quizResponse.ok) {
+          const errData = await quizResponse.json();
+          throw new Error(errData.error || 'Failed to fetch quiz');
+        }
+
+        const quizData = await quizResponse.json();
+
+        // ✅ Actually set the quiz state
+        setQuiz({
+          id: quizData.id,
+          content: quizData.content,
+        });
+      } catch (err: any) {
+        console.error('Failed to fetch quiz:', err);
+        setError(err.message);
       } finally {
         setIsLoading(false);
       }
@@ -67,9 +70,11 @@ export default function ChapterQuizPage() {
 
   const handleQuizSubmit = async (answers: { [key: string]: string }, timeTaken: number) => {
     try {
-      // In a real app, you'd calculate the score here
-      // and submit it to the API
-      alert('Quiz submitted! (Demo mode)');
+      await fetch('/api/quiz-attempts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quizId: quiz?.id, answers, timeTaken }),
+      });
       router.push(`/books/${bookSlug}`);
     } catch (error) {
       console.error('Failed to submit quiz:', error);
@@ -97,6 +102,9 @@ export default function ChapterQuizPage() {
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">No quiz available for this chapter yet.</p>
+              {error && (
+                <p className="text-sm text-red-500 mb-2">{error}</p>
+              )}
               <p className="text-sm text-muted-foreground">
                 Check back soon or visit another chapter!
               </p>
