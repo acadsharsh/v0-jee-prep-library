@@ -3,13 +3,26 @@ export interface QuizOption {
   text: string;
 }
 
-export interface QuizQuestion {
+export interface MCQQuestion {
   id: string;
+  type: 'mcq';
   questionText: string;
   options: QuizOption[];
   correctOptionId: string;
   explanation: string;
 }
+
+export interface NumericalQuestion {
+  id: string;
+  type: 'numerical';
+  questionText: string;
+  correctAnswer: number;
+  tolerance: number;
+  unit?: string;
+  explanation: string;
+}
+
+export type QuizQuestion = MCQQuestion | NumericalQuestion;
 
 export interface QuizJSON {
   book_slug: string;
