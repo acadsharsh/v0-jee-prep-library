@@ -1,62 +1,52 @@
 'use client';
 import Link from 'next/link';
 import { Book } from '@/lib/types';
+import { BookOpen } from 'lucide-react';
 
 interface BookshelfProps { books: Book[]; isLoading: boolean; }
 
-const ACCENTS = ['var(--lime)', 'var(--mint)', 'var(--yellow)', '#ff7eb3', '#7eb3ff'];
+const COLORS = [
+  { bg: '#fff3ee', accent: '#ff7d3b', icon: '⚡' },
+  { bg: '#ede9fe', accent: '#7b6cf6', icon: '🔬' },
+  { bg: '#d1fae5', accent: '#059669', icon: '∑' },
+  { bg: '#fef9c3', accent: '#ca8a04', icon: '🧲' },
+];
 
 export function Bookshelf({ books, isLoading }: BookshelfProps) {
   if (isLoading) return (
-    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:0, border:'1.5px solid var(--dim)' }}>
-      {[...Array(4)].map((_,i) => (
-        <div key={i} style={{ height:160, borderRight:'1.5px solid var(--dim)', background:'var(--black-2)', borderBottom:'none' }} />
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+      {[...Array(4)].map((_, i) => (
+        <div key={i} style={{ height: 160, borderRadius: 16, background: '#f4f5fb' }} />
       ))}
     </div>
   );
 
   if (!books.length) return (
-    <div style={{ padding:'60px 0', textAlign:'center', border:'1.5px solid var(--dim)', color:'var(--muted)', fontSize:13, textTransform:'uppercase', letterSpacing:'0.08em' }}>
-      No books yet
+    <div style={{ padding: '60px', textAlign: 'center', borderRadius: 16, background: '#f4f5fb', color: '#9ca3af', fontSize: 14, fontWeight: 700 }}>
+      No books available yet
     </div>
   );
 
   return (
-    <div style={{ border:'1.5px solid var(--dim)', display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
       {books.map((book, idx) => {
-        const accent = ACCENTS[idx % ACCENTS.length];
+        const c = COLORS[idx % COLORS.length];
         return (
           <Link key={book.id} href={`/books/${book.slug}`}>
-            <div style={{
-              padding:'28px 24px',
-              borderRight: '1.5px solid var(--dim)',
-              borderBottom: '1.5px solid var(--dim)',
-              cursor:'pointer',
-              transition:'background 0.12s',
-              minHeight:160,
-              display:'flex', flexDirection:'column', justifyContent:'space-between',
-              position:'relative', overflow:'hidden',
+            <div className="d-card" style={{
+              background: c.bg, border: 'none',
+              minHeight: 160, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s',
             }}
-            onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--black-2)'}
-            onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 12px 40px rgba(0,0,0,0.1)'; }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(0)'; el.style.boxShadow = 'none'; }}
             >
-              {/* Accent line top */}
-              <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:accent }} />
-
+              <div style={{ fontSize: 36 }}>{c.icon}</div>
               <div>
-                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:accent, marginBottom:10 }}>
-                  Book {idx + 1}
-                </div>
-                <div style={{ fontSize:17, fontWeight:700, color:'var(--white)', lineHeight:1.25, letterSpacing:'-0.3px' }}>
+                <div style={{ fontSize: 15, fontWeight: 900, color: '#1e1e2d', fontFamily: 'Space Grotesk, sans-serif', marginBottom: 6 }}>
                   {book.title}
                 </div>
-              </div>
-
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:20 }}>
-                <span style={{ fontSize:12, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                  View chapters
-                </span>
-                <span style={{ color:accent, fontSize:18 }}>→</span>
+                <div style={{ fontSize: 12, color: c.accent, fontWeight: 800 }}>View chapters →</div>
               </div>
             </div>
           </Link>

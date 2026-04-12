@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { Target, TrendingUp, BookMarked, Clock } from 'lucide-react';
 
 interface Stats { totalAttempts: number; averageScore: number; lastAttempt: string | null; uniqueQuizzes: number; }
 
@@ -14,21 +15,16 @@ export function StatsDashboard() {
     if (!user) return;
     (async () => {
       try {
-        // Real columns: score, completed_at (not score_percentage / created_at)
         const { data: attempts } = await supabase
-          .from('quiz_attempts')
-          .select('score, completed_at, quiz_id')
-          .eq('user_id', user.id)
-          .order('completed_at', { ascending: false });
-
+          .from('quiz_attempts').select('score, completed_at, quiz_id')
+          .eq('user_id', user.id).order('completed_at', { ascending: false });
         if (attempts?.length) {
           const avg = attempts.reduce((s, a) => s + (a.score ?? 0), 0) / attempts.length;
-          const unique = new Set(attempts.map(a => a.quiz_id)).size;
           setStats({
             totalAttempts: attempts.length,
             averageScore: Math.round(avg),
             lastAttempt: new Date(attempts[0].completed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-            uniqueQuizzes: unique,
+            uniqueQuizzes: new Set(attempts.map(a => a.quiz_id)).size,
           });
         }
       } catch (e) { console.error(e); }
@@ -36,19 +32,27 @@ export function StatsDashboard() {
     })();
   }, [user]);
 
-  const scoreColor = stats.averageScore >= 75 ? 'var(--lime)' : stats.averageScore >= 50 ? 'var(--yellow)' : '#ff4444';
+  const scoreColor = stats.averageScore >= 75 ? '#059669' : stats.averageScore >= 50 ? '#ca8a04' : '#ef4444';
+  const scoreBg = stats.averageScore >= 75 ? '#d1fae5' : stats.averageScore >= 50 ? '#fef9c3' : '#fee2e2';
+
+  const cards = [
+    { icon: <Target size={20} color="#ff7d3b" />, iconBg: '#fff3ee', label: 'Quizzes taken', val: loading ? '—' : String(stats.totalAttempts), color: '#1e1e2d' },
+    { icon: <TrendingUp size={20} color="#7b6cf6" />, iconBg: '#ede9fe', label: 'Avg score', val: loading ? '—' : `${stats.averageScore}%`, color: scoreColor, valBg: scoreBg },
+    { icon: <BookMarked size={20} color="#059669" />, iconBg: '#d1fae5', label: 'Unique quizzes', val: loading ? '—' : String(stats.uniqueQuizzes), color: '#1e1e2d' },
+    { icon: <Clock size={20} color="#ca8a04" />, iconBg: '#fef9c3', label: 'Last attempt', val: loading ? '—' : (stats.lastAttempt || 'None'), color: '#1e1e2d', small: true },
+  ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', border: '1.5px solid var(--dim)' }}>
-      {[
-        { label: 'Quizzes taken', val: loading ? '—' : stats.totalAttempts, color: 'var(--white)' },
-        { label: 'Avg score', val: loading ? '—' : `${stats.averageScore}%`, color: scoreColor },
-        { label: 'Unique quizzes', val: loading ? '—' : stats.uniqueQuizzes, color: 'var(--mint)' },
-        { label: 'Last attempt', val: loading ? '—' : (stats.lastAttempt || 'None'), color: 'var(--muted)', small: true },
-      ].map((c, i) => (
-        <div key={i} style={{ padding: '20px 18px', borderRight: i < 3 ? '1.5px solid var(--dim)' : 'none' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: 8 }}>{c.label}</div>
-          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: c.small ? 18 : 32, fontWeight: 700, color: c.color, lineHeight: 1 }}>{c.val}</div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+      {cards.map((c, i) => (
+        <div key={i} className="stat-card">
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {c.icon}
+          </div>
+          <div className="lbl">{c.label}</div>
+          <div className="num" style={{ fontSize: c.small ? 22 : 32, color: c.color }}>
+            {c.val}
+          </div>
         </div>
       ))}
     </div>

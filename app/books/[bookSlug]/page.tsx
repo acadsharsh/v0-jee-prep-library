@@ -4,8 +4,9 @@ import { useParams } from 'next/navigation';
 import { Navigation } from '@/components/navigation';
 import { ChapterBrowser } from '@/components/chapter-browser';
 import Link from 'next/link';
+import { ChevronLeft, BookOpen, Layers } from 'lucide-react';
 
-interface ChaptersData { [classId:string]: Array<{id:string;book_id:string;class_identifier:string;chapter_number:number;title:string;slug:string;created_at:string;}>; }
+interface ChaptersData { [classId: string]: Array<{ id: string; book_id: string; class_identifier: string; chapter_number: number; title: string; slug: string; created_at: string; }>; }
 
 export default function BookPage() {
   const params = useParams();
@@ -20,26 +21,30 @@ export default function BookPage() {
         const [cr, br] = await Promise.all([fetch(`/api/books/${bookSlug}/chapters`), fetch('/api/books')]);
         const data = await cr.json(); const books = await br.json();
         setChapters(data);
-        const book = books.find((b:any) => b.slug===bookSlug);
+        const book = books.find((b: any) => b.slug === bookSlug);
         if (book) setBookTitle(book.title);
-      } catch(e){console.error(e);}
-      finally{setIsLoading(false);}
+      } catch (e) { console.error(e); }
+      finally { setIsLoading(false); }
     })();
   }, [bookSlug]);
 
-  const total = Object.values(chapters).reduce((s,a) => s+a.length, 0);
+  const total = Object.values(chapters).reduce((s, a) => s + a.length, 0);
 
   return (
     <>
       <Navigation />
-      <main style={{ background:'var(--black)', minHeight:'calc(100vh - 52px)' }}>
-        <div style={{ padding:'16px 40px', borderBottom:'1.5px solid var(--dim)', display:'flex', alignItems:'center', gap:14 }}>
-          <Link href="/" style={{ fontSize:12, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>← Library</Link>
-          <span style={{ color:'var(--dim)' }}>/</span>
-          <span style={{ fontSize:13, fontWeight:700, color:'var(--lime)' }}>{bookTitle||bookSlug.toUpperCase()}</span>
-          {!isLoading && total > 0 && <span style={{ fontSize:12, color:'var(--muted)' }}>{total} chapters</span>}
+      <main style={{ background: '#f4f5fb', minHeight: 'calc(100vh - 64px)' }}>
+        <div style={{ background: '#ffffff', borderBottom: '1px solid #e8e8f0', padding: '16px 28px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#9ca3af', fontWeight: 700 }}>
+            <ChevronLeft size={14} /> Library
+          </Link>
+          <span style={{ color: '#e8e8f0' }}>›</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#1e1e2d' }}>{bookTitle || bookSlug}</span>
+          {!isLoading && total > 0 && (
+            <span style={{ padding: '2px 10px', borderRadius: 100, background: '#ede9fe', color: '#7b6cf6', fontSize: 11, fontWeight: 800 }}>{total} chapters</span>
+          )}
         </div>
-        <div style={{ padding:'32px 40px', maxWidth:860 }}>
+        <div style={{ padding: '28px', maxWidth: 900 }}>
           <ChapterBrowser chapters={chapters} bookSlug={bookSlug} isLoading={isLoading} />
         </div>
       </main>
