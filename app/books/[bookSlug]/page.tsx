@@ -33,15 +33,15 @@ export default function BookPage() {
   return (
     <>
       <Navigation />
-      <main style={{ background: '#12141f', minHeight: 'calc(100vh - 64px)' }}>
-        <div style={{ background: '#1a1c2e', borderBottom: '1px solid #2d3255', padding: '16px 28px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
+      <main className="dash-root" style={{ minHeight: 'calc(100vh - 64px)' }}>
+        <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E8EAF0', padding: '16px 28px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#7C8DB0', fontWeight: 800 }}>
             <ChevronLeft size={14} /> Dashboard
           </Link>
-          <span style={{ color: '#2d3255' }}>›</span>
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#ffffff' }}>{bookTitle || bookSlug}</span>
+          <span style={{ color: '#E8EAF0' }}>›</span>
+          <span style={{ fontFamily: 'Lilita One, cursive', fontSize: 16, color: '#1A1A2E' }}>{bookTitle || bookSlug}</span>
           {!isLoading && total > 0 && (
-            <span style={{ padding: '2px 10px', borderRadius: 100, background: 'rgba(123,108,246,0.2)', color: '#7b6cf6', fontSize: 11, fontWeight: 800 }}>{total} chapters</span>
+            <span style={{ padding: '2px 12px', borderRadius: 100, background: '#EDE9FE', color: '#7C3AED', fontSize: 11, fontWeight: 800 }}>{total} chapters</span>
           )}
         </div>
         <div style={{ padding: '28px', maxWidth: 900 }}>

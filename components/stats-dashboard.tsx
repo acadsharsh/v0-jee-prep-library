@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
-import { Target, TrendingUp, BookMarked, Clock } from 'lucide-react';
+import { Target, TrendingUp, Layers, Clock } from 'lucide-react';
 
 interface Stats { totalAttempts: number; averageScore: number; lastAttempt: string | null; uniqueQuizzes: number; }
 
@@ -20,9 +20,8 @@ export function StatsDashboard() {
           .select('score, completed_at, quiz_id')
           .eq('user_id', user.id)
           .order('completed_at', { ascending: false });
-
-        if (error) { console.error('Stats error:', error.message); setLoading(false); return; }
-        if (attempts && attempts.length > 0) {
+        if (error) { console.error('Stats error:', error.message); return; }
+        if (attempts?.length) {
           const avg = attempts.reduce((s, a) => s + (a.score ?? 0), 0) / attempts.length;
           setStats({
             totalAttempts: attempts.length,
@@ -36,25 +35,50 @@ export function StatsDashboard() {
     })();
   }, [user]);
 
-  const scoreColor = stats.totalAttempts === 0 ? '#6b7280' : stats.averageScore >= 75 ? '#34d399' : stats.averageScore >= 50 ? '#f5c842' : '#f87171';
-  const scoreBg   = stats.totalAttempts === 0 ? 'rgba(107,114,128,0.15)' : stats.averageScore >= 75 ? 'rgba(52,211,153,0.12)' : stats.averageScore >= 50 ? 'rgba(245,200,66,0.12)' : 'rgba(248,113,113,0.12)';
+  const pct = `${stats.totalAttempts > 0 ? Math.min(100, Math.round((stats.uniqueQuizzes / Math.max(stats.totalAttempts, 1)) * 100)) : 0}%`;
 
   const cards = [
-    { icon: <Target size={20} color="#ff7d3b" />, iconBg: 'rgba(255,125,59,0.15)', label: 'Total attempts', val: loading ? '…' : String(stats.totalAttempts), color: '#ffffff' },
-    { icon: <TrendingUp size={20} color="#7b6cf6" />, iconBg: 'rgba(123,108,246,0.15)', label: 'Avg accuracy', val: loading ? '…' : stats.totalAttempts === 0 ? '—' : `${stats.averageScore}%`, color: scoreColor, valBg: scoreBg, hasScore: true },
-    { icon: <BookMarked size={20} color="#34d399" />, iconBg: 'rgba(52,211,153,0.15)', label: 'Sets practiced', val: loading ? '…' : String(stats.uniqueQuizzes), color: '#ffffff' },
-    { icon: <Clock size={20} color="#f5c842" />, iconBg: 'rgba(245,200,66,0.15)', label: 'Last session', val: loading ? '…' : (stats.lastAttempt || '—'), color: '#ffffff', small: true },
+    {
+      bg: '#C8DFFE', icon: <Target size={28} color="#1D4ED8" />, iconBg: 'rgba(29,78,216,0.1)',
+      label: 'Completed', sub: 'total attempts',
+      val: loading ? '…' : `${stats.totalAttempts}`,
+      suffix: '',
+    },
+    {
+      bg: '#DDD6FE', icon: <Layers size={28} color="#6D28D9" />, iconBg: 'rgba(109,40,217,0.1)',
+      label: 'Sets practiced', sub: `${stats.uniqueQuizzes} unique`,
+      val: loading ? '…' : `${stats.uniqueQuizzes}`,
+      suffix: '',
+    },
+    {
+      bg: '#FBD0E8', icon: <TrendingUp size={28} color="#BE185D" />, iconBg: 'rgba(190,24,93,0.1)',
+      label: 'Avg score', sub: stats.totalAttempts === 0 ? 'no attempts yet' : stats.averageScore >= 75 ? 'great job!' : 'keep going!',
+      val: loading ? '…' : stats.totalAttempts === 0 ? '—' : `${stats.averageScore}`,
+      suffix: stats.totalAttempts > 0 ? '%' : '',
+    },
+    {
+      bg: '#FDE68A', icon: <Clock size={28} color="#92400E" />, iconBg: 'rgba(146,64,14,0.1)',
+      label: 'Last session', sub: 'most recent',
+      val: loading ? '…' : (stats.lastAttempt || '—'),
+      suffix: '', small: true,
+    },
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 0 }}>
       {cards.map((c, i) => (
-        <div key={i} style={{ background: '#1a1c2e', borderRadius: 16, padding: '20px 24px', border: '1px solid #2d3255', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {c.icon}
+        <div key={i} className="stat-card" style={{ background: c.bg }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span className="lbl">{c.label}</span>
+            <div className="icon" style={{ position: 'static', opacity: 1, width: 36, height: 36, borderRadius: 10, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {c.icon}
+            </div>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#6b7280' }}>{c.label}</div>
-          <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: c.small ? 20 : 32, fontWeight: 900, color: c.color, lineHeight: 1 }}>{c.val}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+            <span className="val" style={{ fontSize: c.small ? 24 : 38 }}>{c.val}</span>
+            {c.suffix && <span style={{ fontFamily: 'Lilita One, cursive', fontSize: 20, color: '#1A1A2E', opacity: 0.6 }}>{c.suffix}</span>}
+          </div>
+          <span className="sub">{c.sub}</span>
         </div>
       ))}
     </div>
