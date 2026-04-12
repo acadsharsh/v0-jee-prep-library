@@ -3,12 +3,18 @@ export interface QuizOption {
   text: string;
 }
 
+export type QuestionType = 'mcq' | 'msq' | 'numerical';
+
 export interface QuizQuestion {
   id: string;
+  type?: QuestionType; // defaults to 'mcq' if missing
   questionText: string;
-  options: QuizOption[];
-  correctOptionId: string;
-  explanation: string;
+  options?: QuizOption[];           // mcq/msq
+  correctOptionId?: string;         // mcq only
+  correctOptionIds?: string[];      // msq — multiple correct
+  correctAnswer?: number;           // numerical
+  tolerance?: number;               // numerical tolerance ±
+  explanation?: string;
 }
 
 export interface QuizJSON {
@@ -18,8 +24,8 @@ export interface QuizJSON {
   chapter_number: number;
   chapter_title: string;
   quiz_title: string;
-  quiz_description: string;
-  difficulty: string;
+  quiz_description?: string;
+  difficulty?: string;
   questions: QuizQuestion[];
 }
 
