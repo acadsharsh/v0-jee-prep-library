@@ -20,12 +20,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkProfile = async (userId: string) => {
     try {
-      // Real table: profiles, column: role (not user_profiles / is_admin)
+      // Use maybeSingle() — returns null instead of error when 0 rows
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       setIsAdmin(profile?.role === 'admin');
     } catch {
       setIsAdmin(false);
