@@ -18,49 +18,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const checkProfile = async (userId: string) => {
+    try {
+      // Real table: profiles, column: role (not user_profiles / is_admin)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      setIsAdmin(profile?.role === 'admin');
+    } catch {
+      setIsAdmin(false);
+    }
+  };
+
   useEffect(() => {
-    const checkAuth = async () => {
+    const init = async () => {
       try {
         const { data } = await supabase.auth.getSession();
         setUser(data.session?.user ?? null);
-        
-        if (data.session?.user) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('is_admin')
-            .eq('user_id', data.session.user.id)
-            .single();
-          
-          setIsAdmin(profile?.is_admin ?? false);
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
+        if (data.session?.user) await checkProfile(data.session.user.id);
+      } catch (e) {
+        console.error('Auth check failed:', e);
       } finally {
         setLoading(false);
       }
     };
+    init();
 
-    checkAuth();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) await checkProfile(session.user.id);
+      else setIsAdmin(false);
+    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('is_admin')
-            .eq('user_id', session.user.id)
-            .single();
-          setIsAdmin(profile?.is_admin ?? false);
-        } else {
-          setIsAdmin(false);
-        }
-      }
-    );
-
-    return () => {
-      subscription?.unsubscribe();
-    };
+    return () => { subscription?.unsubscribe(); };
   }, []);
 
   const logout = async () => {
@@ -78,8 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 }

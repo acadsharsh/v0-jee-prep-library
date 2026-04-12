@@ -260,3 +260,12 @@ input::placeholder, textarea::placeholder { color: #c4c4d4; }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #e8e8f0; border-radius: 10px; }
+
+/* Dark dashboard overrides */
+.dark-page input, .dark-page textarea {
+  background: #1a1c2e;
+  border-color: #2d3255;
+  color: #ffffff;
+}
+.dark-page input::placeholder, .dark-page textarea::placeholder { color: #4b5563; }
+.dark-page input:focus, .dark-page textarea:focus { border-color: #7b6cf6; background: #1e2235; }

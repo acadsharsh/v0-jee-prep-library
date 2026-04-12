@@ -12,13 +12,17 @@ export function StatsDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     (async () => {
       try {
-        const { data: attempts } = await supabase
-          .from('quiz_attempts').select('score, completed_at, quiz_id')
-          .eq('user_id', user.id).order('completed_at', { ascending: false });
-        if (attempts?.length) {
+        const { data: attempts, error } = await supabase
+          .from('quiz_attempts')
+          .select('score, completed_at, quiz_id')
+          .eq('user_id', user.id)
+          .order('completed_at', { ascending: false });
+
+        if (error) { console.error('Stats error:', error.message); setLoading(false); return; }
+        if (attempts && attempts.length > 0) {
           const avg = attempts.reduce((s, a) => s + (a.score ?? 0), 0) / attempts.length;
           setStats({
             totalAttempts: attempts.length,
@@ -32,27 +36,25 @@ export function StatsDashboard() {
     })();
   }, [user]);
 
-  const scoreColor = stats.averageScore >= 75 ? '#059669' : stats.averageScore >= 50 ? '#ca8a04' : '#ef4444';
-  const scoreBg = stats.averageScore >= 75 ? '#d1fae5' : stats.averageScore >= 50 ? '#fef9c3' : '#fee2e2';
+  const scoreColor = stats.totalAttempts === 0 ? '#6b7280' : stats.averageScore >= 75 ? '#34d399' : stats.averageScore >= 50 ? '#f5c842' : '#f87171';
+  const scoreBg   = stats.totalAttempts === 0 ? 'rgba(107,114,128,0.15)' : stats.averageScore >= 75 ? 'rgba(52,211,153,0.12)' : stats.averageScore >= 50 ? 'rgba(245,200,66,0.12)' : 'rgba(248,113,113,0.12)';
 
   const cards = [
-    { icon: <Target size={20} color="#ff7d3b" />, iconBg: '#fff3ee', label: 'Quizzes taken', val: loading ? '—' : String(stats.totalAttempts), color: '#1e1e2d' },
-    { icon: <TrendingUp size={20} color="#7b6cf6" />, iconBg: '#ede9fe', label: 'Avg score', val: loading ? '—' : `${stats.averageScore}%`, color: scoreColor, valBg: scoreBg },
-    { icon: <BookMarked size={20} color="#059669" />, iconBg: '#d1fae5', label: 'Unique quizzes', val: loading ? '—' : String(stats.uniqueQuizzes), color: '#1e1e2d' },
-    { icon: <Clock size={20} color="#ca8a04" />, iconBg: '#fef9c3', label: 'Last attempt', val: loading ? '—' : (stats.lastAttempt || 'None'), color: '#1e1e2d', small: true },
+    { icon: <Target size={20} color="#ff7d3b" />, iconBg: 'rgba(255,125,59,0.15)', label: 'Total attempts', val: loading ? '…' : String(stats.totalAttempts), color: '#ffffff' },
+    { icon: <TrendingUp size={20} color="#7b6cf6" />, iconBg: 'rgba(123,108,246,0.15)', label: 'Avg accuracy', val: loading ? '…' : stats.totalAttempts === 0 ? '—' : `${stats.averageScore}%`, color: scoreColor, valBg: scoreBg, hasScore: true },
+    { icon: <BookMarked size={20} color="#34d399" />, iconBg: 'rgba(52,211,153,0.15)', label: 'Sets practiced', val: loading ? '…' : String(stats.uniqueQuizzes), color: '#ffffff' },
+    { icon: <Clock size={20} color="#f5c842" />, iconBg: 'rgba(245,200,66,0.15)', label: 'Last session', val: loading ? '…' : (stats.lastAttempt || '—'), color: '#ffffff', small: true },
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
       {cards.map((c, i) => (
-        <div key={i} className="stat-card">
+        <div key={i} style={{ background: '#1a1c2e', borderRadius: 16, padding: '20px 24px', border: '1px solid #2d3255', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ width: 40, height: 40, borderRadius: 12, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {c.icon}
           </div>
-          <div className="lbl">{c.label}</div>
-          <div className="num" style={{ fontSize: c.small ? 22 : 32, color: c.color }}>
-            {c.val}
-          </div>
+          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#6b7280' }}>{c.label}</div>
+          <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: c.small ? 20 : 32, fontWeight: 900, color: c.color, lineHeight: 1 }}>{c.val}</div>
         </div>
       ))}
     </div>
