@@ -6,7 +6,7 @@ import { ChapterBrowser } from '@/components/chapter-browser';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 
-interface ChaptersData { [classId:string]:Array<{ id:string; book_id:string; class_identifier:string; chapter_number:number; title:string; slug:string; created_at:string; }>; }
+interface ChaptersData { [classId: string]: Array<{ id: string; book_id: string; class_identifier: string; chapter_number: number; title: string; slug: string; created_at: string; }>; }
 
 export default function BookPage() {
   const params = useParams();
@@ -21,30 +21,30 @@ export default function BookPage() {
         const [cr, br] = await Promise.all([fetch(`/api/books/${bookSlug}/chapters`), fetch('/api/books')]);
         const data = await cr.json(); const books = await br.json();
         setChapters(data);
-        const book = books.find((b:any) => b.slug===bookSlug);
+        const book = books.find((b: any) => b.slug === bookSlug);
         if (book) setBookTitle(book.title);
-      } catch(e) { console.error(e); }
+      } catch (e) { console.error(e); }
       finally { setIsLoading(false); }
     })();
   }, [bookSlug]);
 
-  const total = Object.values(chapters).reduce((s,a) => s+a.length, 0);
+  const total = Object.values(chapters).reduce((s, a) => s + a.length, 0);
 
   return (
     <>
       <Navigation />
-      <main style={{ background:'#0d0d0d', minHeight:'calc(100vh - 58px)' }}>
-        <div style={{ background:'#0d0d0d', borderBottom:'1px solid rgba(255,255,255,0.07)', padding:'14px 28px', display:'flex', alignItems:'center', gap:12 }}>
-          <Link href="/dashboard" style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'rgba(255,255,255,0.35)', fontWeight:600 }}>
-            <ChevronLeft size={13}/> Dashboard
+      <main style={{ background: '#12141f', minHeight: 'calc(100vh - 64px)' }}>
+        <div style={{ background: '#1a1c2e', borderBottom: '1px solid #2d3255', padding: '16px 28px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
+            <ChevronLeft size={14} /> Dashboard
           </Link>
-          <span style={{ color:'rgba(255,255,255,0.15)' }}>›</span>
-          <span style={{ fontSize:13, fontWeight:700, color:'rgba(255,255,255,0.85)' }}>{bookTitle||bookSlug}</span>
-          {!isLoading && total>0 && (
-            <span style={{ padding:'2px 10px', borderRadius:100, background:'rgba(155,127,232,0.15)', color:'#9B7FE8', fontSize:10, fontWeight:800 }}>{total} chapters</span>
+          <span style={{ color: '#2d3255' }}>›</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#ffffff' }}>{bookTitle || bookSlug}</span>
+          {!isLoading && total > 0 && (
+            <span style={{ padding: '2px 10px', borderRadius: 100, background: 'rgba(123,108,246,0.2)', color: '#7b6cf6', fontSize: 11, fontWeight: 800 }}>{total} chapters</span>
           )}
         </div>
-        <div style={{ padding:'28px', maxWidth:900 }}>
+        <div style={{ padding: '28px', maxWidth: 900 }}>
           <ChapterBrowser chapters={chapters} bookSlug={bookSlug} isLoading={isLoading} />
         </div>
       </main>

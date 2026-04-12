@@ -1,61 +1,59 @@
 'use client';
+import { Navigation } from '@/components/navigation';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Navigation } from '@/components/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
-    try { await login(email, password); router.push('/dashboard'); }
-    catch(err:any) { setError(err.message||'Invalid credentials'); }
+    try {
+      const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+      if (err) { setError(err.message); return; }
+      if (data.session) router.push('/dashboard');
+    } catch { setError('Login failed'); }
     finally { setLoading(false); }
   };
 
-  const inputStyle = { width:'100%', padding:'12px 16px', borderRadius:10, background:'#141414', border:'1.5px solid rgba(255,255,255,0.1)', color:'#fff', fontSize:14, fontFamily:'DM Sans,sans-serif', outline:'none', transition:'border-color .15s' };
-
   return (
-    <div style={{ background:'#0d0d0d', minHeight:'100vh' }}>
+    <>
       <Navigation />
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'calc(100vh - 58px)', padding:24 }}>
-        <div style={{ width:'100%', maxWidth:400 }}>
-          <div style={{ textAlign:'center', marginBottom:32 }}>
-            <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:900, fontSize:28, color:'#fff', marginBottom:6 }}>Welcome back</div>
-            <div style={{ fontSize:14, color:'rgba(255,255,255,0.4)' }}>Sign in to continue your prep</div>
+      <main style={{ minHeight: 'calc(100vh - 64px)', background: '#f4f5fb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div className="fade-up" style={{ width: '100%', maxWidth: 400, background: '#ffffff', borderRadius: 24, overflow: 'hidden', border: '1px solid #e8e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.06)' }}>
+          <div style={{ padding: '32px 32px 24px', borderBottom: '1px solid #e8e8f0', background: '#ede9fe' }}>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#1e1e2d', fontFamily: 'Space Grotesk, sans-serif', marginBottom: 4 }}>Welcome back 👋</div>
+            <div style={{ fontSize: 14, color: '#7b6cf6', fontWeight: 700 }}>Sign in to continue your prep</div>
           </div>
-          <div style={{ background:'#141414', border:'1px solid rgba(255,255,255,0.07)', borderRadius:18, padding:'32px 28px' }}>
-            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
-              <div>
-                <label style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:8 }}>Email</label>
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required style={inputStyle} placeholder="you@example.com"
-                  onFocus={e=>(e.target as HTMLInputElement).style.borderColor='rgba(255,210,63,0.5)'}
-                  onBlur={e=>(e.target as HTMLInputElement).style.borderColor='rgba(255,255,255,0.1)'} />
-              </div>
-              <div>
-                <label style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:8 }}>Password</label>
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={inputStyle} placeholder="••••••••"
-                  onFocus={e=>(e.target as HTMLInputElement).style.borderColor='rgba(255,210,63,0.5)'}
-                  onBlur={e=>(e.target as HTMLInputElement).style.borderColor='rgba(255,255,255,0.1)'} />
-              </div>
-              {error && <div style={{ padding:'10px 14px', borderRadius:9, background:'rgba(255,82,82,0.1)', border:'1px solid rgba(255,82,82,0.2)', fontSize:13, color:'#FF5252', fontWeight:600 }}>{error}</div>}
-              <button type="submit" disabled={loading} style={{ padding:'13px', borderRadius:10, background:'#FFD23F', color:'#0d0d0d', fontFamily:'Space Grotesk,sans-serif', fontSize:14, fontWeight:800, border:'none', cursor:loading?'not-allowed':'pointer', opacity:loading?0.6:1, marginTop:4 }}>
-                {loading ? 'Signing in…' : 'Sign in →'}
+          <div style={{ padding: '28px 32px' }}>
+            {error && <div style={{ padding: '10px 14px', borderRadius: 10, marginBottom: 16, background: '#fee2e2', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>{error}</div>}
+            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {[
+                { label: 'Email', type: 'email', ph: 'you@example.com', val: email, set: setEmail },
+                { label: 'Password', type: 'password', ph: '••••••••', val: password, set: setPassword },
+              ].map((f, i) => (
+                <div key={i}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{f.label}</div>
+                  <input type={f.type} placeholder={f.ph} value={f.val} required onChange={e => f.set(e.target.value)} />
+                </div>
+              ))}
+              <button type="submit" disabled={loading} className="btn-primary" style={{ marginTop: 6, justifyContent: 'center', opacity: loading ? 0.6 : 1 }}>
+                {loading ? 'Signing in…' : <><span>Sign in</span><ArrowRight size={15} /></>}
               </button>
             </form>
-          </div>
-          <div style={{ textAlign:'center', marginTop:20, fontSize:13, color:'rgba(255,255,255,0.35)' }}>
-            No account? <Link href="/signup" style={{ color:'#FFD23F', fontWeight:700 }}>Sign up free</Link>
+            <p style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', marginTop: 20, fontWeight: 700 }}>
+              No account?{' '}<Link href="/signup" style={{ color: '#7b6cf6', fontWeight: 800 }}>Create one free</Link>
+            </p>
           </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
