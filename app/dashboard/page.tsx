@@ -7,28 +7,25 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { ArrowRight, TrendingUp, BookOpen, ChevronRight } from 'lucide-react';
+import { TrendingUp, ArrowRight } from 'lucide-react';
 
-interface Book { id: string; slug: string; title: string; cover_image_url: string | null; }
-interface AttemptData { title: string; score: number; date: string; quiz_id: string; }
+interface Book { id:string; slug:string; title:string; cover_image_url:string|null; }
+interface AttemptData { title:string; score:number; date:string; quiz_id:string; }
 
-const BOOK_ICONS: Record<string, string> = {
-  hcv: '⚡', irodov: '🔬', ncert: '📗', dc: '⚗️', sl: '🧮',
-};
-const BOOK_COLORS = [
-  { bg: '#1e2235', border: '#2d3255', accent: '#7b6cf6' },
-  { bg: '#1e2535', border: '#2d3555', accent: '#ff7d3b' },
-  { bg: '#1e3530', border: '#2d5548', accent: '#34d399' },
-  { bg: '#352520', border: '#553528', accent: '#f87171' },
-  { bg: '#352535', border: '#553555', accent: '#c084fc' },
+const BOOK_THEMES = [
+  { accent:'#FFD23F', bg:'rgba(255,210,63,0.08)', border:'rgba(255,210,63,0.15)', icon:'⚡' },
+  { accent:'#9B7FE8', bg:'rgba(155,127,232,0.08)', border:'rgba(155,127,232,0.15)', icon:'🔬' },
+  { accent:'#4CAF7D', bg:'rgba(76,175,125,0.08)', border:'rgba(76,175,125,0.15)', icon:'📗' },
+  { accent:'#FF7D3B', bg:'rgba(255,125,59,0.08)', border:'rgba(255,125,59,0.15)', icon:'⚗️' },
+  { accent:'#4A9EFF', bg:'rgba(74,158,255,0.08)', border:'rgba(74,158,255,0.15)', icon:'🧮' },
 ];
 
 const TT = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: '#1e2235', border: '1px solid #2d3255', borderRadius: 10, padding: '8px 14px' }}>
-      <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2, fontWeight: 700 }}>{label}</div>
-      <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 20, fontWeight: 900, color: '#7b6cf6' }}>{payload[0].value}%</div>
+    <div style={{ background:'#1a1a1a', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'8px 14px' }}>
+      <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', marginBottom:2, fontWeight:700 }}>{label}</div>
+      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:22, fontWeight:900, color:'#FFD23F' }}>{payload[0].value}%</div>
     </div>
   );
 };
@@ -46,46 +43,36 @@ export default function DashboardPage() {
     if (!user) { router.push('/login'); return; }
     (async () => {
       try {
-        // Fetch books and attempts in parallel
         const [booksRes, attemptsRes] = await Promise.all([
           fetch('/api/books'),
-          supabase.from('quiz_attempts').select('quiz_id, score, completed_at, quizzes(title)')
-            .eq('user_id', user.id).order('completed_at', { ascending: false }).limit(10),
+          supabase.from('quiz_attempts').select('quiz_id, score, completed_at, quizzes(title)').eq('user_id', user.id).order('completed_at', { ascending:false }).limit(10),
         ]);
-
-        const booksData = await booksRes.json();
-        setBooks(booksData);
-
+        setBooks(await booksRes.json());
         const { data } = attemptsRes;
         if (data) {
-          const fmt: AttemptData[] = data.map(a => ({
-            title: (a.quizzes as any)?.title || 'Practice set',
-            score: a.score ?? 0,
-            date: new Date(a.completed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-            quiz_id: a.quiz_id,
-          }));
+          const fmt: AttemptData[] = data.map(a => ({ title:(a.quizzes as any)?.title||'Practice set', score:a.score??0, date:new Date(a.completed_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'}), quiz_id:a.quiz_id }));
           setAttempts(fmt);
           const seen = new Map();
-          fmt.forEach(a => { if (!seen.has(a.quiz_id)) seen.set(a.quiz_id, { name: a.title.split(' ').slice(0, 2).join(' '), score: a.score }); });
-          setChartData(Array.from(seen.values()).slice(0, 6));
+          fmt.forEach(a => { if (!seen.has(a.quiz_id)) seen.set(a.quiz_id, { name:a.title.split(' ').slice(0,2).join(' '), score:a.score }); });
+          setChartData(Array.from(seen.values()).slice(0,6));
         }
-      } catch (e) { console.error(e); }
+      } catch(e) { console.error(e); }
       finally { setIsLoading(false); }
     })();
   }, [user, loading, router]);
 
-  const hexScore = (s: number) => s >= 75 ? '#10b981' : s >= 50 ? '#f59e0b' : '#ef4444';
-  const cssScore = (s: number) => s >= 75 ? '#34d399' : s >= 50 ? '#f5c842' : '#f87171';
-  const bgScore  = (s: number) => s >= 75 ? 'rgba(52,211,153,0.15)' : s >= 50 ? 'rgba(245,200,66,0.15)' : 'rgba(248,113,113,0.15)';
+  const hexScore = (s:number) => s>=75 ? '#4CAF7D' : s>=50 ? '#FFD23F' : '#FF5252';
+  const cssScore = (s:number) => s>=75 ? '#4CAF7D' : s>=50 ? '#FFD23F' : '#FF5252';
+  const bgScore  = (s:number) => s>=75 ? 'rgba(76,175,125,0.15)' : s>=50 ? 'rgba(255,210,63,0.15)' : 'rgba(255,82,82,0.15)';
 
   if (loading || isLoading) return (
     <>
       <Navigation />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 64px)', background: '#12141f' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #2d3255', borderTopColor: '#7b6cf6', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'calc(100vh - 58px)', background:'#0d0d0d' }}>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ width:36, height:36, borderRadius:'50%', border:'3px solid rgba(255,255,255,0.08)', borderTopColor:'#FFD23F', animation:'spin 0.8s linear infinite', margin:'0 auto 12px' }} />
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <p style={{ color: '#6b7280', fontSize: 14, fontWeight: 700 }}>Loading…</p>
+          <p style={{ color:'rgba(255,255,255,0.3)', fontSize:13, fontWeight:600 }}>Loading…</p>
         </div>
       </div>
     </>
@@ -94,56 +81,42 @@ export default function DashboardPage() {
   return (
     <>
       <Navigation />
-      <main style={{ background: '#12141f', minHeight: 'calc(100vh - 64px)' }}>
+      <main style={{ background:'#0d0d0d', minHeight:'calc(100vh - 58px)' }}>
 
-        {/* Header */}
-        <div style={{ background: '#1a1c2e', borderBottom: '1px solid #2d3255', padding: '20px 28px' }}>
-          <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>Overview</div>
-          <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 900, fontSize: 26, color: '#ffffff', letterSpacing: '-0.5px' }}>
+        {/* Header bar */}
+        <div style={{ background:'#0d0d0d', borderBottom:'1px solid rgba(255,255,255,0.07)', padding:'18px 28px' }}>
+          <div style={{ fontSize:11, color:'rgba(255,255,255,0.3)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Overview</div>
+          <h1 style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:900, fontSize:24, color:'#fff', letterSpacing:'-0.4px' }}>
             Hello, {user?.email?.split('@')[0] ?? 'Student'} 👋
           </h1>
         </div>
 
-        <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ padding:'24px 28px', display:'flex', flexDirection:'column', gap:24 }}>
 
-          {/* Stats */}
+          {/* KPI cards */}
           <StatsDashboard />
 
-          {/* Chapter wise practice bank — ditto tile grid */}
+          {/* Book tiles */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6b7280', marginBottom: 4 }}>Practice Bank</div>
-                <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 900, fontSize: 18, color: '#ffffff' }}>Chapter wise Practice Bank</h2>
+                <div style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.09em', color:'rgba(255,255,255,0.3)', marginBottom:4 }}>Practice Bank</div>
+                <h2 style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:900, fontSize:18, color:'#fff' }}>Chapter-wise Practice</h2>
               </div>
-              <span style={{ fontSize: 13, fontWeight: 800, color: '#7b6cf6', cursor: 'pointer' }}>VIEW ALL</span>
             </div>
-
-            {/* Book tiles — ditto style */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))', gap:12 }}>
               {books.map((book, idx) => {
-                const c = BOOK_COLORS[idx % BOOK_COLORS.length];
-                const key = book.slug.toLowerCase();
-                const icon = Object.entries(BOOK_ICONS).find(([k]) => key.includes(k))?.[1] ?? '📘';
+                const th = BOOK_THEMES[idx % BOOK_THEMES.length];
                 return (
                   <Link key={book.id} href={`/books/${book.slug}`}>
-                    <div style={{
-                      background: c.bg, borderRadius: 14,
-                      border: `1px solid ${c.border}`,
-                      padding: '20px 16px',
-                      cursor: 'pointer', transition: 'all 0.15s',
-                      display: 'flex', flexDirection: 'column', gap: 12,
-                      minHeight: 130,
-                    }}
-                      onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = c.accent; el.style.transform = 'translateY(-2px)'; }}
-                      onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = c.border; el.style.transform = 'translateY(0)'; }}
+                    <div style={{ background:'#141414', border:`1px solid ${th.border}`, borderRadius:16, padding:'20px 16px', cursor:'pointer', transition:'all 0.15s', display:'flex', flexDirection:'column', gap:14, minHeight:140 }}
+                      onMouseEnter={e => { const el=e.currentTarget as HTMLElement; el.style.background=th.bg; el.style.transform='translateY(-3px)'; }}
+                      onMouseLeave={e => { const el=e.currentTarget as HTMLElement; el.style.background='#141414'; el.style.transform='translateY(0)'; }}
                     >
-                      <div style={{ fontSize: 36 }}>{icon}</div>
+                      <div style={{ fontSize:38 }}>{th.icon}</div>
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 900, color: '#ffffff', fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.2, marginBottom: 4 }}>
-                          {book.title}
-                        </div>
-                        <div style={{ fontSize: 11, color: c.accent, fontWeight: 700 }}>Practice →</div>
+                        <div style={{ fontSize:14, fontWeight:800, color:'#fff', fontFamily:'Space Grotesk,sans-serif', lineHeight:1.25, marginBottom:6 }}>{book.title}</div>
+                        <div style={{ fontSize:11, color:th.accent, fontWeight:700, display:'flex', alignItems:'center', gap:4 }}>Practice <ArrowRight size={11}/></div>
                       </div>
                     </div>
                   </Link>
@@ -152,54 +125,53 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Chart + Recent — two col */}
-          <div style={{ display: 'grid', gridTemplateColumns: chartData.length ? '1.5fr 1fr' : '1fr', gap: 16 }}>
+          {/* Chart + Recent */}
+          <div style={{ display:'grid', gridTemplateColumns:chartData.length?'1.6fr 1fr':'1fr', gap:16 }}>
             {chartData.length > 0 && (
-              <div style={{ background: '#1a1c2e', border: '1px solid #2d3255', borderRadius: 16, padding: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 10, background: '#2d3255', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <TrendingUp size={16} color="#7b6cf6" />
+              <div style={{ background:'#141414', border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, padding:'24px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20 }}>
+                  <div style={{ width:34, height:34, borderRadius:10, background:'rgba(155,127,232,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <TrendingUp size={16} color="#9B7FE8" />
                   </div>
-                  <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 800, fontSize: 15, color: '#ffffff' }}>Score history</span>
+                  <span style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:15, color:'#fff' }}>Score history</span>
                 </div>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={chartData} barCategoryGap="35%">
-                    <XAxis dataKey="name" stroke="transparent" tick={{ fill: '#6b7280', fontSize: 11, fontFamily: 'Nunito' }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 100]} stroke="transparent" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<TT />} cursor={{ fill: 'rgba(123,108,246,0.08)', radius: 8 }} />
-                    <Bar dataKey="score" radius={[8, 8, 4, 4]}>
-                      {chartData.map((e, i) => <Cell key={i} fill={hexScore(e.score)} />)}
+                    <XAxis dataKey="name" stroke="transparent" tick={{ fill:'rgba(255,255,255,0.3)', fontSize:11, fontFamily:'DM Sans' }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0,100]} stroke="transparent" tick={{ fill:'rgba(255,255,255,0.3)', fontSize:11 }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<TT />} cursor={{ fill:'rgba(255,210,63,0.05)', radius:8 }} />
+                    <Bar dataKey="score" radius={[8,8,4,4]}>
+                      {chartData.map((e,i) => <Cell key={i} fill={hexScore(e.score)} />)}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             )}
 
-            <div style={{ background: '#1a1c2e', border: '1px solid #2d3255', borderRadius: 16, padding: '24px' }}>
-              <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 800, fontSize: 15, color: '#ffffff', marginBottom: 16 }}>Recent sessions</div>
+            <div style={{ background:'#141414', border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, padding:'24px' }}>
+              <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:15, color:'#fff', marginBottom:16 }}>Recent sessions</div>
               {attempts.length ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {attempts.slice(0, 6).map((a, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, background: '#12141f' }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                  {attempts.slice(0,6).map((a,i) => (
+                    <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 13px', borderRadius:10, background:'#0d0d0d', border:'1px solid rgba(255,255,255,0.05)' }}>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{a.title.length > 22 ? a.title.slice(0, 22) + '…' : a.title}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginTop: 2 }}>{a.date}</div>
+                        <div style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.85)' }}>{a.title.length>22?a.title.slice(0,22)+'…':a.title}</div>
+                        <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)', fontWeight:600, marginTop:2 }}>{a.date}</div>
                       </div>
-                      <span style={{ padding: '4px 10px', borderRadius: 8, background: bgScore(a.score), color: cssScore(a.score), fontSize: 14, fontWeight: 900, fontFamily: 'Space Grotesk, sans-serif' }}>
-                        {a.score}%
-                      </span>
+                      <span style={{ padding:'3px 10px', borderRadius:8, background:bgScore(a.score), color:cssScore(a.score), fontSize:13, fontWeight:900, fontFamily:'Space Grotesk,sans-serif' }}>{a.score}%</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                  <div style={{ fontSize: 32, marginBottom: 10 }}>📖</div>
-                  <p style={{ color: '#6b7280', fontSize: 14, fontWeight: 700, marginBottom: 16 }}>No sessions yet</p>
-                  <p style={{ color: '#4b5563', fontSize: 12, fontWeight: 600 }}>Pick a book above and start practicing</p>
+                <div style={{ textAlign:'center', padding:'32px 0' }}>
+                  <div style={{ fontSize:32, marginBottom:10 }}>📖</div>
+                  <p style={{ color:'rgba(255,255,255,0.3)', fontSize:13, fontWeight:700, marginBottom:8 }}>No sessions yet</p>
+                  <p style={{ color:'rgba(255,255,255,0.2)', fontSize:11, fontWeight:600 }}>Pick a book above to start</p>
                 </div>
               )}
             </div>
           </div>
+
         </div>
       </main>
     </>

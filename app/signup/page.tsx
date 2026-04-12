@@ -1,72 +1,61 @@
 'use client';
-import { Navigation } from '@/components/navigation';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { Navigation } from '@/components/navigation';
+import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle } from 'lucide-react';
 
 export default function SignupPage() {
-  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signup } = useAuth();
   const router = useRouter();
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(''); setSuccess(''); setLoading(true);
-    if (password !== confirm) { setError('Passwords do not match'); setLoading(false); return; }
-    if (password.length < 6) { setError('Min 6 characters'); setLoading(false); return; }
-    try {
-      const { data: { user }, error: err } = await supabase.auth.signUp({ email, password });
-      if (err) { setError(err.message); return; }
-      if (user) {
-        // Use correct table: profiles, columns: id, username, role
-        await supabase.from('profiles').insert({ id: user.id, username: fullName || email.split('@')[0], role: 'user' });
-        setSuccess('Account created! Check your email to verify.');
-        setTimeout(() => router.push('/login'), 2500);
-      }
-    } catch { setError('Signup failed'); }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); setError(''); setLoading(true);
+    try { await signup(email, password); router.push('/dashboard'); }
+    catch(err:any) { setError(err.message||'Sign up failed'); }
     finally { setLoading(false); }
   };
 
+  const inputStyle = { width:'100%', padding:'12px 16px', borderRadius:10, background:'#141414', border:'1.5px solid rgba(255,255,255,0.1)', color:'#fff', fontSize:14, fontFamily:'DM Sans,sans-serif', outline:'none', transition:'border-color .15s' };
+
   return (
-    <>
+    <div style={{ background:'#0d0d0d', minHeight:'100vh' }}>
       <Navigation />
-      <main style={{ minHeight: 'calc(100vh - 64px)', background: '#f4f5fb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div className="fade-up" style={{ width: '100%', maxWidth: 400, background: '#ffffff', borderRadius: 24, overflow: 'hidden', border: '1px solid #e8e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.06)' }}>
-          <div style={{ padding: '32px 32px 24px', borderBottom: '1px solid #e8e8f0', background: '#fff3ee' }}>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#1e1e2d', fontFamily: 'Space Grotesk, sans-serif', marginBottom: 4 }}>Join JEEPrep 🚀</div>
-            <div style={{ fontSize: 14, color: '#ff7d3b', fontWeight: 700 }}>Start cracking JEE today — it's free</div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'calc(100vh - 58px)', padding:24 }}>
+        <div style={{ width:'100%', maxWidth:400 }}>
+          <div style={{ textAlign:'center', marginBottom:32 }}>
+            <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:900, fontSize:28, color:'#fff', marginBottom:6 }}>Create account</div>
+            <div style={{ fontSize:14, color:'rgba(255,255,255,0.4)' }}>Start your JEE prep journey</div>
           </div>
-          <div style={{ padding: '28px 32px' }}>
-            {error && <div style={{ padding: '10px 14px', borderRadius: 10, marginBottom: 14, background: '#fee2e2', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>{error}</div>}
-            {success && <div style={{ padding: '10px 14px', borderRadius: 10, marginBottom: 14, background: '#d1fae5', color: '#059669', fontSize: 13, fontWeight: 700, display: 'flex', gap: 8, alignItems: 'center' }}><CheckCircle size={14} />{success}</div>}
-            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[
-                { label: 'Full name', type: 'text', ph: 'John Doe', val: fullName, set: setFullName, req: false },
-                { label: 'Email', type: 'email', ph: 'you@example.com', val: email, set: setEmail, req: true },
-                { label: 'Password', type: 'password', ph: '••••••••', val: password, set: setPassword, req: true },
-                { label: 'Confirm password', type: 'password', ph: '••••••••', val: confirm, set: setConfirm, req: true },
-              ].map((f, i) => (
-                <div key={i}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{f.label}</div>
-                  <input type={f.type} placeholder={f.ph} value={f.val} required={f.req} onChange={e => f.set(e.target.value)} />
-                </div>
-              ))}
-              <button type="submit" disabled={loading} className="btn-orange" style={{ marginTop: 6, justifyContent: 'center', opacity: loading ? 0.6 : 1 }}>
-                {loading ? 'Creating…' : <><span>Create account</span><ArrowRight size={15} /></>}
+          <div style={{ background:'#141414', border:'1px solid rgba(255,255,255,0.07)', borderRadius:18, padding:'32px 28px' }}>
+            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
+              <div>
+                <label style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:8 }}>Email</label>
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required style={inputStyle} placeholder="you@example.com"
+                  onFocus={e=>(e.target as HTMLInputElement).style.borderColor='rgba(255,210,63,0.5)'}
+                  onBlur={e=>(e.target as HTMLInputElement).style.borderColor='rgba(255,255,255,0.1)'} />
+              </div>
+              <div>
+                <label style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:8 }}>Password</label>
+                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={inputStyle} placeholder="Min 6 characters"
+                  onFocus={e=>(e.target as HTMLInputElement).style.borderColor='rgba(255,210,63,0.5)'}
+                  onBlur={e=>(e.target as HTMLInputElement).style.borderColor='rgba(255,255,255,0.1)'} />
+              </div>
+              {error && <div style={{ padding:'10px 14px', borderRadius:9, background:'rgba(255,82,82,0.1)', border:'1px solid rgba(255,82,82,0.2)', fontSize:13, color:'#FF5252', fontWeight:600 }}>{error}</div>}
+              <button type="submit" disabled={loading} style={{ padding:'13px', borderRadius:10, background:'#FFD23F', color:'#0d0d0d', fontFamily:'Space Grotesk,sans-serif', fontSize:14, fontWeight:800, border:'none', cursor:loading?'not-allowed':'pointer', opacity:loading?0.6:1, marginTop:4 }}>
+                {loading ? 'Creating account…' : 'Get started free →'}
               </button>
             </form>
-            <p style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', marginTop: 20, fontWeight: 700 }}>
-              Have an account?{' '}<Link href="/login" style={{ color: '#7b6cf6', fontWeight: 800 }}>Sign in</Link>
-            </p>
+          </div>
+          <div style={{ textAlign:'center', marginTop:20, fontSize:13, color:'rgba(255,255,255,0.35)' }}>
+            Already have an account? <Link href="/login" style={{ color:'#FFD23F', fontWeight:700 }}>Sign in</Link>
           </div>
         </div>
-      </main>
-    </>
+      </div>
+    </div>
   );
 }
