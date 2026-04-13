@@ -9,221 +9,174 @@ import Link from 'next/link';
 interface Book { id: string; slug: string; title: string; }
 interface AttemptData { title: string; score: number; date: string; quiz_id: string; }
 
-const BCOLORS: Record<string,string> = {
-  hcv:'#7C6FF7', irodov:'#FF6B35', ncert:'#22C55E', dc:'#3B82F6',
-  sl:'#EC4899', vk:'#EF4444', ms:'#8B5CF6', cengage:'#F59E0B',
-};
-const BSHORT: Record<string,string> = {
-  hcv:'HCV', irodov:'IRD', ncert:'NCRT', dc:'DCP',
-  sl:'SL', vk:'VKJ', ms:'MSC', cengage:'CNG',
-};
-function bColor(slug: string) { for (const k of Object.keys(BCOLORS)) { if (slug.toLowerCase().includes(k)) return BCOLORS[k]; } return '#7C6FF7'; }
-function bShort(title: string) { for (const k of Object.keys(BSHORT)) { if (title.toLowerCase().includes(k)) return BSHORT[k]; } return title.slice(0,3).toUpperCase(); }
-const bgScore  = (s: number) => s >= 75 ? '#DCFCE7' : s >= 50 ? '#FEF3C7' : '#FEE2E2';
-const txtScore = (s: number) => s >= 75 ? '#166534' : s >= 50 ? '#854D0E' : '#991B1B';
+const BCOLORS: Record<string,string> = { hcv:'#f5d90a', irodov:'#ff7a00', ncert:'#0fd68a', dc:'#3d9eff', sl:'#ff6fd8', vk:'#ff4d4d', ms:'#b06ef3', cengage:'#b8f72b' };
+function bColor(slug: string) { for (const k of Object.keys(BCOLORS)) { if (slug.toLowerCase().includes(k)) return BCOLORS[k]; } return '#f5d90a'; }
+function bShort(title: string) { const map: Record<string,string> = {hcv:'HCV',irodov:'IRD',ncert:'NCRT',dc:'DCP',sl:'SL',vk:'VKJ',ms:'MSC',cengage:'CNG'}; for(const k of Object.keys(map)){if(title.toLowerCase().includes(k))return map[k];}return title.slice(0,3).toUpperCase(); }
+const bgScore = (s:number) => s>=75?'#b8f72b':s>=50?'#f5d90a':'#ff4d4d';
+const tcScore = (s:number) => s>=50?'#0a0a0a':'#fff';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
   const [attempts, setAttempts] = useState<AttemptData[]>([]);
-  const [stats, setStats] = useState({ total: 0, correct: 0, pct: 0, streak: 0 });
+  const [stats, setStats] = useState({ total:0, avg:0, unique:0, streak:1 });
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (loading) return;
-    if (!user) { router.push('/login'); return; }
-    (async () => {
-      try {
-        const [booksRes, { data }] = await Promise.all([
+  useEffect(()=>{
+    if(loading)return;
+    if(!user){router.push('/login');return;}
+    (async()=>{
+      try{
+        const[booksRes,{data}]=await Promise.all([
           fetch('/api/books'),
-          supabase.from('quiz_attempts')
-            .select('quiz_id, score, completed_at, quizzes(title)')
-            .eq('user_id', user.id)
-            .order('completed_at', { ascending: false })
-            .limit(10),
+          supabase.from('quiz_attempts').select('quiz_id,score,completed_at,quizzes(title)').eq('user_id',user.id).order('completed_at',{ascending:false}).limit(10),
         ]);
-        const booksData = await booksRes.json();
-        setBooks(Array.isArray(booksData) ? booksData : []);
-        if (data?.length) {
-          const fmt: AttemptData[] = data.map(a => ({
-            title: (a.quizzes as any)?.title || 'Practice set',
-            score: a.score ?? 0,
-            date: new Date(a.completed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-            quiz_id: a.quiz_id,
-          }));
+        const bd=await booksRes.json();
+        setBooks(Array.isArray(bd)?bd:[]);
+        if(data?.length){
+          const fmt:AttemptData[]=data.map(a=>({title:(a.quizzes as any)?.title||'Practice',score:a.score??0,date:new Date(a.completed_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'}),quiz_id:a.quiz_id}));
           setAttempts(fmt);
-          const avg = Math.round(fmt.reduce((s,a) => s + a.score, 0) / fmt.length);
-          setStats({ total: fmt.length, correct: fmt.filter(a => a.score >= 60).length, pct: avg, streak: 1 });
+          const avg=Math.round(fmt.reduce((s,a)=>s+a.score,0)/fmt.length);
+          setStats({total:fmt.length,avg,unique:new Set(fmt.map(a=>a.quiz_id)).size,streak:1});
         }
-      } catch (e) { console.error(e); }
-      finally { setIsLoading(false); }
+      }catch(e){console.error(e);}
+      finally{setIsLoading(false);}
     })();
-  }, [user, loading, router]);
+  },[user,loading,router]);
 
-  const name = user?.email?.split('@')[0] ?? 'there';
-  const ini = user?.email?.slice(0,2).toUpperCase() ?? 'U';
-  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const todayIdx = (new Date().getDay() + 6) % 7;
+  const name = user?.email?.split('@')[0]??'Student';
+  const ini = user?.email?.slice(0,2).toUpperCase()??'JE';
 
-  if (loading || isLoading) return (
-    <div className="dbshell">
+  if(loading||isLoading) return (
+    <div className="neo-shell">
       <Navigation />
-      <div className="sbmain" style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <div style={{ textAlign:'center' }}>
-          <div style={{ width:40,height:40,borderRadius:'50%',border:'4px solid var(--pul)',borderTopColor:'var(--pu)',animation:'spin 0.8s linear infinite',margin:'0 auto 14px' }} />
+      <div className="neo-main" style={{display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{textAlign:'center'}}>
+          <div style={{width:40,height:40,border:'4px solid #333',borderTopColor:'#f5d90a',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 14px'}}/>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <p style={{ color:'var(--mu)',fontSize:14,fontWeight:500 }}>Loading…</p>
+          <p style={{fontSize:13,fontWeight:700,color:'#666',textTransform:'uppercase',letterSpacing:'0.05em'}}>Loading…</p>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="dbshell">
+    <div className="neo-shell">
       <Navigation />
-      <div className="sbmain">
-        {/* Top bar */}
-        <div className="dbtop">
-          <div className="tbtitle">Dashboard</div>
-          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <div className="nbtn">🔔<span className="ndot" /></div>
-            <div className="uchip">
-              <div className="ucav">{ini}</div>
-              <span className="ucname">{name}</span>
+      <div className="neo-main">
+
+        {/* Topbar */}
+        <div className="neo-topbar">
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <div style={{width:3,height:22,background:'#f5d90a'}}/>
+            <span className="neo-topbar-title">Dashboard</span>
+          </div>
+          <div className="neo-topbar-right">
+            <div style={{padding:'6px 14px',border:'2px solid #0a0a0a',background:'#0a0a0a',color:'#f5d90a',fontFamily:'Space Mono,monospace',fontSize:12,fontWeight:700}}>
+              {name.toUpperCase()}
             </div>
           </div>
         </div>
 
-        <div className="sub active">
-          {/* Greeting */}
-          <div style={{ marginBottom:24 }}>
-            <h2 style={{ fontSize:26,fontWeight:800,marginBottom:3 }}>Good day, {name}! 👋</h2>
-            <p style={{ color:'var(--mu)',fontSize:14 }}>Here's your practice overview.</p>
+        <div style={{padding:'24px'}}>
+
+          {/* Greeting banner */}
+          <div style={{background:'#f5d90a',border:'3px solid #0a0a0a',boxShadow:'6px 6px 0 #0a0a0a',padding:'20px 24px',marginBottom:24,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div>
+              <div style={{fontFamily:'Space Mono,monospace',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#555',marginBottom:4}}>// WELCOME BACK</div>
+              <div style={{fontSize:22,fontWeight:700,color:'#0a0a0a',letterSpacing:'-0.5px'}}>Good day, {name}! 📐</div>
+            </div>
+            <div style={{fontFamily:'Space Mono,monospace',fontSize:48,fontWeight:700,color:'rgba(0,0,0,0.1)',lineHeight:1}}>JEE</div>
           </div>
 
           {/* Stat tiles */}
-          <div className="sgrid">
-            <div className="stile or"><div className="sico">📚</div><div className="sval">{books.length}</div><div className="slbl2">Books available</div></div>
-            <div className="stile pu"><div className="sico">❓</div><div className="sval">{stats.total}</div><div className="slbl2">Total attempts</div></div>
-            <div className="stile gn"><div className="sico">✅</div><div className="sval">{stats.total > 0 ? `${stats.pct}%` : '—'}</div><div className="slbl2">Avg accuracy</div></div>
-            <div className="stile yw"><div className="sico">🔥</div><div className="sval">{stats.streak}</div><div className="slbl2">Day streak</div></div>
+          <div className="neo-stats-grid" style={{marginBottom:24,border:'3px solid #0a0a0a',boxShadow:'6px 6px 0 #0a0a0a'}}>
+            {[
+              {val:books.length,lbl:'Books available',color:'yellow',ico:'📚'},
+              {val:stats.total,lbl:'Total attempts',color:'coral',ico:'🎯'},
+              {val:stats.total>0?`${stats.avg}%`:'—',lbl:'Avg accuracy',color:'lime',ico:'📊'},
+              {val:stats.unique,lbl:'Unique sets',color:'sky',ico:'✅'},
+            ].map((s,i)=>(
+              <div key={i} className={`neo-stat-tile ${s.color}`}>
+                <div className="neo-stat-ico">{s.ico}</div>
+                <div className="neo-stat-lbl">{s.lbl}</div>
+                <div className="neo-stat-val">{String(s.val)}</div>
+              </div>
+            ))}
           </div>
 
-          {/* Grid: calendar + quick start */}
-          <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr', gap:18, marginBottom:24 }}>
-            <div className="card">
-              <div className="chead"><div className="ctitle">This Week</div></div>
-              <div style={{ padding:'14px 18px' }}>
-                <div style={{ display:'flex', gap:5 }}>
-                  {days.map((d,i) => (
-                    <div key={d} style={{ flex:1, textAlign:'center' }}>
-                      <div style={{ fontSize:9,color:'var(--mu)',marginBottom:5,fontWeight:700,textTransform:'uppercase' }}>{d}</div>
-                      <div style={{
-                        width:26,height:26,borderRadius:'50%',margin:'0 auto',
-                        display:'flex',alignItems:'center',justifyContent:'center',
-                        fontSize:10,fontWeight:700,
-                        background: i<todayIdx ? 'var(--or)' : i===todayIdx ? 'var(--pu)' : 'var(--bg)',
-                        color: i<=todayIdx ? '#fff' : 'var(--mu)',
-                      }}>
-                        {i<todayIdx ? '✓' : i===todayIdx ? '●' : ''}
+          {/* Books + Recent — two col */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:24}}>
+
+            {/* Books */}
+            <div>
+              <div className="neo-sec-head">
+                <div className="neo-sec-title">Your Books</div>
+                <Link href="/" style={{fontFamily:'Space Mono,monospace',fontSize:11,fontWeight:700,textTransform:'uppercase',color:'#666',letterSpacing:'0.06em'}}>Browse all →</Link>
+              </div>
+              {books.length===0?(
+                <div style={{background:'#fafafa',border:'3px solid #0a0a0a',padding:28,textAlign:'center',fontWeight:700,color:'#666'}}>No books yet — add via Admin</div>
+              ):(
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                  {books.map(b=>(
+                    <Link key={b.id} href={`/books/${b.slug}`}>
+                      <div className="neo-book-tile">
+                        <div className="neo-book-spine" style={{background:bColor(b.slug)}}>{bShort(b.title)}</div>
+                        <div className="neo-book-name">{b.title}</div>
+                        <div className="neo-book-sub">Chapter practice</div>
+                        <div className="neo-book-tag">Practice →</div>
                       </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent attempts */}
+            <div>
+              <div className="neo-sec-head">
+                <div className="neo-sec-title">Recent Sessions</div>
+              </div>
+              {attempts.length===0?(
+                <div style={{background:'#fafafa',border:'3px solid #0a0a0a',padding:28,textAlign:'center',fontWeight:700,color:'#666'}}>No sessions yet — start practicing!</div>
+              ):(
+                <div style={{border:'3px solid #0a0a0a',boxShadow:'4px 4px 0 #0a0a0a',overflow:'hidden',background:'#fff'}}>
+                  {attempts.slice(0,6).map((a,i)=>(
+                    <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderBottom:i<5?'2px solid #eee':'none'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        <div style={{width:8,height:8,background:bgScore(a.score)}}/>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:700}}>{a.title.length>24?a.title.slice(0,24)+'…':a.title}</div>
+                          <div style={{fontSize:11,color:'#999',marginTop:1}}>{a.date}</div>
+                        </div>
+                      </div>
+                      <div className="neo-score-badge" style={{background:bgScore(a.score),color:tcScore(a.score)}}>{a.score}%</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ display:'flex', gap:16, marginTop:14, paddingTop:14, borderTop:'1px solid var(--bd)' }}>
-                  <div style={{ textAlign:'center' }}>
-                    <div style={{ fontFamily:'Syne,sans-serif', fontSize:20, fontWeight:800 }}>{stats.total}</div>
-                    <div style={{ fontSize:10,color:'var(--mu)' }}>Attempted</div>
-                  </div>
-                  <div style={{ textAlign:'center' }}>
-                    <div style={{ fontFamily:'Syne,sans-serif', fontSize:20, fontWeight:800 }}>{stats.total > 0 ? `${stats.pct}%` : '—'}</div>
-                    <div style={{ fontSize:10,color:'var(--mu)' }}>Accuracy</div>
+              )}
+            </div>
+          </div>
+
+          {/* Week strip */}
+          <div className="neo-sec-head">
+            <div className="neo-sec-title">This Week</div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:0,border:'3px solid #0a0a0a',boxShadow:'4px 4px 0 #0a0a0a',overflow:'hidden'}}>
+            {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d,i)=>{
+              const todayIdx=(new Date().getDay()+6)%7;
+              const done=i<todayIdx;const today=i===todayIdx;
+              return(
+                <div key={d} style={{textAlign:'center',padding:'14px 8px',borderRight:i<6?'2px solid #eee':'none',background:today?'#f5d90a':done?'#0a0a0a':'#fafafa'}}>
+                  <div style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:today?'#0a0a0a':done?'#f5d90a':'#999',marginBottom:8}}>{d}</div>
+                  <div style={{fontFamily:'Space Mono,monospace',fontSize:14,fontWeight:700,color:today?'#0a0a0a':done?'#fff':'#ccc'}}>
+                    {done?'✓':today?'●':'○'}
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="chead"><div className="ctitle">Quick Start</div></div>
-              <div style={{ padding:16 }}>
-                <p style={{ fontSize:12,color:'var(--mu)',marginBottom:14 }}>Jump into practice</p>
-                {books.slice(0,3).map(b => (
-                  <Link key={b.id} href={`/books/${b.slug}`}>
-                    <div style={{
-                      display:'flex',alignItems:'center',justifyContent:'space-between',
-                      padding:'9px 12px',background:'var(--bg)',borderRadius:'var(--rs)',
-                      cursor:'pointer',border:'1.5px solid var(--bd)',marginBottom:7,transition:'border .15s',
-                    }}
-                      onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.borderColor='var(--pu)'}
-                      onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.borderColor='var(--bd)'}
-                    >
-                      <div style={{ display:'flex',alignItems:'center',gap:9 }}>
-                        <div style={{ width:30,height:30,borderRadius:7,background:bColor(b.slug),display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:800,color:'#fff' }}>{bShort(b.title)}</div>
-                        <span style={{ fontSize:12,fontWeight:600 }}>{b.title}</span>
-                      </div>
-                      <span style={{ fontSize:11,color:'var(--mu)' }}>→</span>
-                    </div>
-                  </Link>
-                ))}
-                <Link href="/" style={{ display:'block',width:'100%',marginTop:12,padding:'10px',background:'var(--or)',color:'#fff',border:'none',borderRadius:'var(--rs)',fontSize:12,fontWeight:700,fontFamily:'Syne,sans-serif',cursor:'pointer',textAlign:'center' }}>
-                  Browse All →
-                </Link>
-              </div>
-            </div>
+              );
+            })}
           </div>
-
-          {/* Books section */}
-          <div style={{ marginBottom:24 }}>
-            <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14 }}>
-              <h2 style={{ fontFamily:'Syne,sans-serif',fontSize:19,fontWeight:800 }}>Your Books</h2>
-              <Link href="/" style={{ fontSize:11,color:'var(--pu)',fontWeight:600,cursor:'pointer',background:'var(--pul)',padding:'3px 10px',borderRadius:100 }}>Browse all</Link>
-            </div>
-            {books.length === 0 ? (
-              <div style={{ fontSize:13,color:'var(--mu)',padding:'16px 0' }}>No books yet — add questions via Admin.</div>
-            ) : (
-              <div className="bcards">
-                {books.map((b, idx) => (
-                  <Link key={b.id} href={`/books/${b.slug}`}>
-                    <div className="btile">
-                      <div className="bspine" style={{ background: bColor(b.slug) }}>{bShort(b.title)}</div>
-                      <div className="bname">{b.title}</div>
-                      <div className="bsublbl">Chapter-wise practice</div>
-                      <div className="bcnt">Practice →</div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recent attempts */}
-          {attempts.length > 0 && (
-            <div>
-              <h2 style={{ fontFamily:'Syne,sans-serif',fontSize:19,fontWeight:800,marginBottom:14 }}>Recent Sessions</h2>
-              <div className="card">
-                {attempts.slice(0,5).map((a,i) => (
-                  <div key={i} style={{
-                    display:'flex',alignItems:'center',justifyContent:'space-between',
-                    padding:'14px 18px',borderBottom:i<4?'1px solid rgba(0,0,0,0.05)':'none',
-                  }}>
-                    <div style={{ display:'flex',alignItems:'center',gap:12 }}>
-                      <div style={{ width:36,height:36,borderRadius:10,background:bgScore(a.score),display:'flex',alignItems:'center',justifyContent:'center',fontSize:18 }}>
-                        {a.score >= 75 ? '🏆' : a.score >= 50 ? '📈' : '📚'}
-                      </div>
-                      <div>
-                        <div style={{ fontSize:13,fontWeight:600,color:'var(--tx)' }}>{a.title.length>30?a.title.slice(0,30)+'…':a.title}</div>
-                        <div style={{ fontSize:11,color:'var(--mu)',marginTop:2 }}>{a.date}</div>
-                      </div>
-                    </div>
-                    <span style={{ padding:'4px 12px',borderRadius:100,background:bgScore(a.score),color:txtScore(a.score),fontSize:13,fontWeight:700,fontFamily:'Syne,sans-serif' }}>
-                      {a.score}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

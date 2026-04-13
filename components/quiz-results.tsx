@@ -1,33 +1,46 @@
 'use client';
 import { RotateCcw, Home } from 'lucide-react';
 
-interface QuizResultsProps {
-  result: { totalQuestions:number; correctAnswers:number; answers:Record<string,string>; score?:number };
-  onRetry: () => void;
-  onHome: () => void;
-}
+interface QuizResultsProps { result:{totalQuestions:number;correctAnswers:number;answers:Record<string,string>;score?:number}; onRetry:()=>void; onHome:()=>void; }
 
-export function QuizResults({ result, onRetry, onHome }: QuizResultsProps) {
-  const pct = result.score ?? Math.round((result.correctAnswers/result.totalQuestions)*100);
-  const wrong = result.totalQuestions - result.correctAnswers;
-  const msg = pct>=80?'Excellent!':pct>=60?'Good job! Keep going':pct>=40?'More practice needed':'Go over this chapter again';
+export function QuizResults({ result, onRetry, onHome }:QuizResultsProps) {
+  const pct=result.score??Math.round((result.correctAnswers/result.totalQuestions)*100);
+  const wrong=result.totalQuestions-result.correctAnswers;
+  const color=pct>=75?'#b8f72b':pct>=50?'#f5d90a':'#ff4d4d';
+  const msg=pct>=80?'EXCELLENT! 🔥':pct>=60?'SOLID WORK 💪':pct>=40?'KEEP GOING 📚':'TRY AGAIN 🎯';
 
   return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'80vh',padding:24,background:'var(--bg)'}}>
-      <div style={{background:'#fff',borderRadius:'var(--r)',border:'1.5px solid var(--bd)',padding:36,textAlign:'center',maxWidth:480,width:'100%',boxShadow:'var(--sh)'}}>
-        <div style={{fontSize:44,marginBottom:12}}>🎯</div>
-        <div style={{fontFamily:'Syne,sans-serif',fontSize:68,fontWeight:800,lineHeight:1,marginBottom:5,color:pct>=75?'var(--gn)':pct>=50?'var(--yw)':'var(--rd)'}}>{pct}%</div>
-        <p style={{color:'var(--mu)',fontSize:14,marginBottom:28}}>{msg}</p>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:28}}>
-          {[{bg:'var(--gnl)',v:result.correctAnswers,l:'Correct',c:'#166534'},{bg:'var(--rdl)',v:wrong,l:'Wrong',c:'#991B1B'},{bg:'var(--bg)',v:result.totalQuestions,l:'Total',c:'var(--mu)'}].map((s,i)=>(
-            <div key={i} style={{padding:14,borderRadius:'var(--rs)',background:s.bg}}>
-              <div style={{fontFamily:'Syne,sans-serif',fontSize:24,fontWeight:800,color:s.c}}>{s.v}</div>
-              <div style={{fontSize:11,marginTop:2,fontWeight:600,color:s.c}}>{s.l}</div>
+    <div style={{background:'var(--bg)',minHeight:'80vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+      <div style={{width:'100%',maxWidth:480,background:'#fafafa',border:'3px solid #0a0a0a',boxShadow:'8px 8px 0 #0a0a0a',overflow:'hidden'}}>
+        {/* Score header */}
+        <div style={{background:color,borderBottom:'3px solid #0a0a0a',padding:'36px',textAlign:'center',position:'relative',overflow:'hidden'}}>
+          <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Space Mono,monospace',fontSize:120,fontWeight:700,color:'rgba(0,0,0,0.08)',lineHeight:1,pointerEvents:'none'}}>{pct}</div>
+          <div style={{position:'relative'}}>
+            <div style={{fontFamily:'Space Mono,monospace',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.12em',color:'rgba(0,0,0,0.5)',marginBottom:8}}>// RESULT</div>
+            <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:72,fontWeight:700,color:'#0a0a0a',lineHeight:1,marginBottom:8}}>{pct}<span style={{fontSize:36}}>%</span></div>
+            <div style={{fontFamily:'Space Mono,monospace',fontSize:14,fontWeight:700,color:'#0a0a0a',textTransform:'uppercase',letterSpacing:'0.06em'}}>{msg}</div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',borderBottom:'3px solid #0a0a0a'}}>
+          {[{bg:'#b8f72b',v:result.correctAnswers,l:'CORRECT'},{bg:'#ff4d4d',tc:'#fff',v:wrong,l:'WRONG'},{bg:'#fafafa',v:result.totalQuestions,l:'TOTAL'}].map((s,i)=>(
+            <div key={i} style={{padding:'20px',textAlign:'center',background:s.bg,borderRight:i<2?'3px solid #0a0a0a':'none'}}>
+              <div style={{fontFamily:'Space Mono,monospace',fontSize:36,fontWeight:700,color:s.tc??'#0a0a0a'}}>{s.v}</div>
+              <div style={{fontFamily:'Space Mono,monospace',fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:s.tc?'rgba(255,255,255,0.7)':'#666',marginTop:4}}>{s.l}</div>
             </div>
           ))}
         </div>
-        <button onClick={onRetry} style={{width:'100%',marginBottom:9,padding:12,background:'var(--dk)',color:'#fff',border:'none',borderRadius:'var(--rs)',fontSize:13,fontWeight:700,fontFamily:'Syne,sans-serif',cursor:'pointer'}}>Try Again</button>
-        <button onClick={onHome} style={{width:'100%',padding:12,background:'var(--pu)',color:'#fff',border:'none',borderRadius:'var(--rs)',fontSize:13,fontWeight:700,fontFamily:'Syne,sans-serif',cursor:'pointer'}}>Back to Practice</button>
+
+        {/* Buttons */}
+        <div style={{display:'flex',gap:0}}>
+          <button onClick={onRetry} style={{flex:1,padding:16,background:'#0a0a0a',color:'#f5d90a',border:'none',borderRight:'3px solid #0a0a0a',fontFamily:'Space Grotesk,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer',textTransform:'uppercase',letterSpacing:'0.05em'}}>
+            ↻ Try Again
+          </button>
+          <button onClick={onHome} style={{flex:1,padding:16,background:'#fafafa',color:'#0a0a0a',border:'none',fontFamily:'Space Grotesk,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer',textTransform:'uppercase',letterSpacing:'0.05em'}}>
+            ← Back
+          </button>
+        </div>
       </div>
     </div>
   );

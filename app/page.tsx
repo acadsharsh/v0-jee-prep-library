@@ -2,96 +2,131 @@
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 
+const BOOKS = [
+  { name:'HC Verma', color:'#f5d90a', short:'HCV' },
+  { name:'Irodov', color:'#ff7a00', short:'IRD' },
+  { name:'Pathfinder', color:'#0fd68a', short:'PATH' },
+  { name:'Black Book', color:'#3d9eff', short:'BB' },
+  { name:'DC Pandey', color:'#ff6fd8', short:'DCP' },
+  { name:'MS Chouhan', color:'#b06ef3', short:'MSC' },
+];
+
 export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const BOOKS = ['HC Verma','Irodov','Pathfinder','Black Book','Cengage','DC Pandey','MS Chouhan','VK Jaiswal'];
-  const BCOLORS: Record<string,string> = {'HC Verma':'#7C6FF7','Irodov':'#FF6B35','Pathfinder':'#22C55E','Black Book':'#3B82F6','Cengage':'#EC4899','DC Pandey':'#F59E0B','MS Chouhan':'#8B5CF6','VK Jaiswal':'#EF4444'};
-
   return (
-    <div className="land-root" style={{ minHeight:'100vh' }}>
+    <div style={{ background:'#111', minHeight:'100vh', color:'#fff', fontFamily:'Space Grotesk, sans-serif' }}>
+
       {/* Nav */}
-      <nav className="lnav">
-        <div className="llogo"><span className="dot" /><span style={{ fontFamily:'Syne,sans-serif' }}>JEEPrep</span></div>
-        <div style={{ display:'flex',alignItems:'center',gap:32 }}>
-          <a style={{ color:'rgba(255,255,255,.6)',fontSize:14,fontWeight:500,cursor:'pointer' }}>Features</a>
-          <a style={{ color:'rgba(255,255,255,.6)',fontSize:14,fontWeight:500,cursor:'pointer' }}>Books</a>
+      <nav style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 48px', borderBottom:'3px solid #f5d90a', background:'#0a0a0a', position:'sticky', top:0, zIndex:50 }}>
+        <div style={{ fontFamily:'Space Mono, monospace', fontSize:22, fontWeight:700, color:'#f5d90a', letterSpacing:1 }}>JEEPREP*</div>
+        <div style={{ display:'flex', gap:8 }}>
+          {!loading && (user ? (
+            <button onClick={()=>router.push('/dashboard')} className="neu-btn" style={{ fontSize:13 }}>Dashboard →</button>
+          ) : (
+            <>
+              <button onClick={()=>router.push('/login')} style={{ padding:'9px 20px', background:'transparent', color:'#fff', border:'2px solid #444', fontFamily:'Space Grotesk, sans-serif', fontSize:13, fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.04em' }}>Sign in</button>
+              <button onClick={()=>router.push('/signup')} className="neu-btn" style={{ fontSize:13 }}>Start free →</button>
+            </>
+          ))}
         </div>
-        {!loading && (user
-          ? <button className="lbtn" onClick={()=>router.push('/dashboard')}>Dashboard →</button>
-          : <button className="lbtn" onClick={()=>router.push('/login')}>Start Practicing →</button>
-        )}
       </nav>
 
       {/* Hero */}
-      <section style={{ minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',padding:'120px 40px 80px',position:'relative' }}>
-        <div style={{ position:'absolute',inset:0,background:'radial-gradient(ellipse 80% 60% at 50% 0%,rgba(124,111,247,.3) 0%,transparent 60%),radial-gradient(ellipse 40% 40% at 80% 80%,rgba(255,107,53,.15) 0%,transparent 50%)',pointerEvents:'none' }} />
-        <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,255,255,.08)',border:'1px solid rgba(255,255,255,.12)',borderRadius:100,padding:'7px 18px',fontSize:13,marginBottom:28 }}>
-          <span className="ping" />&nbsp;JEE · NEET · Foundation
-        </div>
-        <h1 style={{ fontFamily:'Syne,sans-serif',fontSize:'clamp(42px,7vw,80px)',fontWeight:800,lineHeight:1.05,letterSpacing:'-2px',marginBottom:24 }}>
-          Master Your Books.<br/>Crack <span style={{ color:'var(--or)' }}>JEE & NEET.</span>
-        </h1>
-        <p style={{ fontSize:18,color:'rgba(255,255,255,.55)',maxWidth:520,lineHeight:1.7,marginBottom:44,fontWeight:300 }}>
-          Chapter-wise practice from HCV, Irodov, Pathfinder & more. Track your accuracy, fix weak spots, ace the exam.
-        </p>
-        <div style={{ display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap' }}>
-          {!loading && (user
-            ? <button className="bprim" onClick={()=>router.push('/dashboard')}>Go to Dashboard</button>
-            : <>
-                <button className="bprim" onClick={()=>router.push('/signup')}>Start for Free</button>
-                <button className="bout" onClick={()=>router.push('/login')}>Sign in</button>
+      <section style={{ padding:'80px 48px 60px', maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:48, alignItems:'center' }}>
+        <div>
+          {/* Badge */}
+          <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', background:'#1a1a1a', border:'2px solid #f5d90a', marginBottom:24 }}>
+            <div style={{ width:8, height:8, background:'#0fd68a', borderRadius:'50%' }} />
+            <span style={{ fontSize:12, fontWeight:700, color:'#f5d90a', letterSpacing:'0.08em', textTransform:'uppercase' }}>JEE · NEET · 2026</span>
+          </div>
+
+          <h1 style={{ fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'clamp(44px, 6vw, 72px)', lineHeight:1.05, letterSpacing:'-2px', marginBottom:24 }}>
+            MASTER<br/>
+            <span style={{ color:'#f5d90a', WebkitTextStroke:'2px #f5d90a' }}>CHAPTER</span><br/>
+            BY CHAPTER.
+          </h1>
+
+          <p style={{ fontSize:17, color:'#777', lineHeight:1.7, marginBottom:36, maxWidth:440, fontWeight:400 }}>
+            Practice from HCV, Irodov & more. Track your accuracy per chapter. MCQ + MSQ + Numerical — all JEE types.
+          </p>
+
+          <div style={{ display:'flex', gap:12 }}>
+            {!loading && (user ? (
+              <button onClick={()=>router.push('/dashboard')} className="neu-btn" style={{ fontSize:15, padding:'14px 32px' }}>Go to Dashboard ▶</button>
+            ) : (
+              <>
+                <button onClick={()=>router.push('/signup')} className="neu-btn" style={{ fontSize:15, padding:'14px 32px' }}>Start for Free</button>
+                <button onClick={()=>router.push('/login')} className="neu-btn-outline neu-btn" style={{ fontSize:15, padding:'14px 28px' }}>Sign in</button>
               </>
-          )}
+            ))}
+          </div>
         </div>
 
-        {/* Stats cards */}
-        <div style={{ display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap',marginTop:64 }}>
-          {[{icon:'📚',val:'12+',lbl:'Reference Books'},{icon:'⚡',val:'MCQ+MSQ+Num',lbl:'Question types'},{icon:'🎯',val:'Chapter-wise',lbl:'Organized practice'},{icon:'📊',val:'Live',lbl:'Analytics'}].map((c,i)=>(
-            <div key={i} style={{ background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',borderRadius:'var(--r)',padding:'20px 24px',textAlign:'left',minWidth:150,backdropFilter:'blur(8px)' }}>
-              <div style={{ fontSize:26,marginBottom:10 }}>{c.icon}</div>
-              <div style={{ fontFamily:'Syne,sans-serif',fontSize:22,fontWeight:800 }}>{c.val}</div>
-              <div style={{ fontSize:11,color:'rgba(255,255,255,.5)',marginTop:2 }}>{c.lbl}</div>
+        {/* Right — stacked cards */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          {[
+            { label:'MCQ + MSQ + Numerical', icon:'📝', bg:'#f5d90a', tc:'#0a0a0a' },
+            { label:'Instant Explanations', icon:'💡', bg:'#0fd68a', tc:'#0a0a0a' },
+            { label:'Live Accuracy Tracking', icon:'📊', bg:'#3d9eff', tc:'#fff' },
+            { label:'Chapter-wise Practice', icon:'📖', bg:'#ff7a00', tc:'#fff' },
+          ].map((c, i) => (
+            <div key={i} style={{ background:c.bg, border:'3px solid #0a0a0a', boxShadow:'5px 5px 0 #0a0a0a', padding:'20px 18px' }}>
+              <div style={{ fontSize:32, marginBottom:10 }}>{c.icon}</div>
+              <div style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:14, fontWeight:700, color:c.tc, lineHeight:1.3 }}>{c.label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Books strip */}
-      <div style={{ padding:'40px 60px 20px',textAlign:'center' }}>
-        <div style={{ fontSize:11,fontWeight:700,letterSpacing:2,textTransform:'uppercase',color:'rgba(255,255,255,.35)',marginBottom:24 }}>Supported Books</div>
-        <div style={{ display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap' }}>
-          {BOOKS.map(b=>(
-            <div key={b} style={{ display:'flex',alignItems:'center',gap:8,background:'rgba(255,255,255,.07)',border:'1px solid rgba(255,255,255,.1)',borderRadius:100,padding:'8px 18px',fontSize:13,fontWeight:500 }}>
-              <span style={{ width:8,height:8,borderRadius:'50%',background:BCOLORS[b],display:'inline-block' }} />{b}
+      {/* Yellow ticker */}
+      <div style={{ background:'#f5d90a', borderTop:'3px solid #0a0a0a', borderBottom:'3px solid #0a0a0a', padding:'12px 0', overflow:'hidden', whiteSpace:'nowrap' }}>
+        <div style={{ display:'inline-flex', animation:'ticker 20s linear infinite', gap:0 }}>
+          {Array(8).fill(null).map((_,i) => (
+            <span key={i} style={{ fontFamily:'Space Mono, monospace', fontSize:13, fontWeight:700, color:'#0a0a0a', textTransform:'uppercase', letterSpacing:'0.08em', padding:'0 32px' }}>
+              PHYSICS ✦ CHEMISTRY ✦ MATHEMATICS ✦ JEE 2026 ✦
+            </span>
+          ))}
+        </div>
+        <style>{`@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}`}</style>
+      </div>
+
+      {/* Books */}
+      <section style={{ padding:'60px 48px', maxWidth:1100, margin:'0 auto' }}>
+        <div style={{ fontFamily:'Space Mono, monospace', fontSize:11, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'#555', marginBottom:20 }}>// SUPPORTED BOOKS</div>
+        <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+          {BOOKS.map(b => (
+            <div key={b.name} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 18px', background:'#1a1a1a', border:'2px solid #333' }}>
+              <div style={{ width:10, height:10, background:b.color }} />
+              <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{b.name}</span>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Features */}
-      <div style={{ padding:'60px',display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:20,maxWidth:1100,margin:'0 auto' }}>
-        {[
-          {bg:'rgba(255,107,53,.15)',icon:'⚡',title:'Chapter-wise Practice',text:'Filter by book, chapter, difficulty and type. Practice exactly what you need.'},
-          {bg:'rgba(124,111,247,.15)',icon:'🎯',title:'MCQ + MSQ + Numerical',text:'All JEE question types — single correct, multiple correct, and integer type.'},
-          {bg:'rgba(34,197,94,.15)',icon:'📊',title:'Track Progress',text:'Accuracy per session, daily streaks and performance tracking.'},
-          {bg:'rgba(59,130,246,.15)',icon:'🧠',title:'Detailed Solutions',text:'Step-by-step solutions after every attempt. Learn from mistakes.'},
-        ].map((f,i)=>(
-          <div key={i} style={{ background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',borderRadius:'var(--r)',padding:28,transition:'all .25s',cursor:'default' }}
-            onMouseEnter={e=>{const el=e.currentTarget as HTMLDivElement;el.style.background='rgba(255,255,255,.08)';el.style.transform='translateY(-4px)';el.style.borderColor='rgba(124,111,247,.3)';}}
-            onMouseLeave={e=>{const el=e.currentTarget as HTMLDivElement;el.style.background='rgba(255,255,255,.04)';el.style.transform='translateY(0)';el.style.borderColor='rgba(255,255,255,.08)';}}
-          >
-            <div style={{ width:44,height:44,borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,marginBottom:16,background:f.bg }}>{f.icon}</div>
-            <div style={{ fontSize:17,fontWeight:700,marginBottom:8,fontFamily:'Syne,sans-serif' }}>{f.title}</div>
-            <div style={{ fontSize:13,color:'rgba(255,255,255,.45)',lineHeight:1.7 }}>{f.text}</div>
-          </div>
-        ))}
-      </div>
+      {/* How it works */}
+      <section style={{ padding:'0 48px 80px', maxWidth:1100, margin:'0 auto' }}>
+        <div style={{ fontFamily:'Space Mono, monospace', fontSize:11, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'#555', marginBottom:20 }}>// HOW IT WORKS</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+          {[
+            { n:'01', title:'Upload Questions', desc:'Use AI to extract questions from any book PDF. Paste the JSON into admin.' },
+            { n:'02', title:'Pick a Chapter', desc:'Browse books → chapters. See question count per chapter.' },
+            { n:'03', title:'Practice & Track', desc:'Answer questions. Get instant feedback. Track your accuracy over time.' },
+          ].map((s,i) => (
+            <div key={i} style={{ background:'#1a1a1a', border:'2px solid #333', padding:28 }}>
+              <div style={{ fontFamily:'Space Mono, monospace', fontSize:48, fontWeight:700, color:'#222', lineHeight:1, marginBottom:8 }}>{s.n}</div>
+              <div style={{ fontSize:16, fontWeight:700, marginBottom:8, color:'#fff' }}>{s.title}</div>
+              <div style={{ fontSize:13, color:'#666', lineHeight:1.65 }}>{s.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <div style={{ padding:'32px 60px',borderTop:'1px solid rgba(255,255,255,.07)',textAlign:'center',fontSize:12,color:'rgba(255,255,255,.25)' }}>
-        © 2026 JEEPrep · Built for JEE & NEET aspirants
-      </div>
+      <footer style={{ padding:'24px 48px', borderTop:'3px solid #222', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <span style={{ fontFamily:'Space Mono, monospace', fontWeight:700, color:'#f5d90a', fontSize:16 }}>JEEPREP*</span>
+        <span style={{ fontSize:12, color:'#444' }}>© 2026 · Built for JEE & NEET</span>
+      </footer>
     </div>
   );
 }

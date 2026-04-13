@@ -10,51 +10,54 @@ export function Navigation() {
   const isLanding = pathname === '/';
   const handleLogout = async () => { await logout(); router.push('/'); };
 
-  if (isLanding) return null; // landing has inline nav
+  if (isLanding) return null;
 
-  const ini = user?.email?.slice(0, 2).toUpperCase() ?? 'U';
+  const ini = user?.email?.slice(0,2).toUpperCase() ?? 'JE';
   const name = user?.email?.split('@')[0] ?? 'User';
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', ic: '🏠' },
-    { href: '/', label: 'Home', ic: '📚' },
-    ...(isAdmin ? [{ href: '/admin', label: 'Admin', ic: '⚙️' }] : []),
+    { href: '/dashboard', label: 'Dashboard', ic: '◼' },
+    { href: '/', label: 'Home', ic: '◈' },
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin', ic: '⚙' }] : []),
   ];
 
   return (
-    <aside className="sidebar">
-      <div className="sblogo"><span className="dot" /><span>JEEPrep</span></div>
-      <div className="sbsec">Menu</div>
+    <aside className="neo-sidebar">
+      <div className="neo-logo">
+        <span style={{ fontFamily:'Space Mono, monospace', fontWeight:700 }}>JEEP*</span>
+      </div>
+
+      <div className="neo-sec">Navigate</div>
       {navItems.map(item => (
         <Link key={item.href} href={item.href}
-          className={`sbi ${pathname === item.href || (item.href === '/dashboard' && pathname.startsWith('/dashboard')) ? 'active' : ''}`}>
-          <span className="ic">{item.ic}</span>{item.label}
+          className={`neo-sbi ${pathname.startsWith(item.href) && item.href !== '/' ? 'active' : pathname === item.href && item.href === '/' ? 'active' : pathname === '/dashboard' && item.href === '/dashboard' ? 'active' : ''}`}>
+          <span className="ic" style={{ fontFamily:'Space Mono, monospace' }}>{item.ic}</span>
+          {item.label}
         </Link>
       ))}
 
-      {/* Book sections */}
-      <div className="sbsec" style={{ marginTop: 16 }}>Books</div>
-      <Link href="/books/hcv" className="sbi" style={{ fontSize: 12 }}>
-        <span className="ic">⚡</span>HCV
+      <div className="neo-sec" style={{ marginTop: 16 }}>Books</div>
+      <Link href="/books/hcv" className="neo-sbi" style={{ fontSize: 12 }}>
+        <span className="ic">⚡</span> HCV
       </Link>
-      <Link href="/books/irodov" className="sbi" style={{ fontSize: 12 }}>
-        <span className="ic">🔬</span>Irodov
+      <Link href="/books/irodov" className="neo-sbi" style={{ fontSize: 12 }}>
+        <span className="ic">◎</span> Irodov
       </Link>
 
-      <div className="sbsp" />
+      <div className="neo-sp" />
 
       {!loading && user && (
-        <div className="sbuser" onClick={handleLogout} title="Click to sign out">
-          <div className="sbav">{ini}</div>
+        <div className="neo-user" onClick={handleLogout} title="Click to sign out">
+          <div className="neo-av" style={{ fontFamily:'Space Mono, monospace' }}>{ini}</div>
           <div>
-            <div className="sbname">{name}</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>Sign out</div>
+            <div className="neo-name">{name}</div>
+            <div style={{ fontSize: 10, color: '#555', fontWeight: 600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Sign out →</div>
           </div>
         </div>
       )}
       {!loading && !user && (
-        <Link href="/login" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, background: 'var(--or)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
-          Sign in
+        <Link href="/login" style={{ display:'flex',alignItems:'center',justifyContent:'center',padding:'10px',background:'var(--yellow)',color:'var(--black)',border:'2px solid var(--yellow)',fontWeight:700,fontSize:13,textAlign:'center',textTransform:'uppercase',letterSpacing:'0.05em' }}>
+          Sign in →
         </Link>
       )}
     </aside>
