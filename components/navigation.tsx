@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, ShieldCheck, LogOut, Bell, Home, BookOpen } from 'lucide-react';
 
 export function Navigation() {
   const { user, isAdmin, logout, loading } = useAuth();
@@ -11,63 +10,53 @@ export function Navigation() {
   const isLanding = pathname === '/';
   const handleLogout = async () => { await logout(); router.push('/'); };
 
-  if (isLanding) return null;
+  if (isLanding) return null; // landing has inline nav
+
+  const ini = user?.email?.slice(0, 2).toUpperCase() ?? 'U';
+  const name = user?.email?.split('@')[0] ?? 'User';
+
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard', ic: '🏠' },
+    { href: '/', label: 'Home', ic: '📚' },
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin', ic: '⚙️' }] : []),
+  ];
 
   return (
-    <nav className="dash-topnav">
-      {/* Left — logo + nav pills */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Lilita One, cursive', fontSize: 16, color: '#fff' }}>J</div>
-          <span style={{ fontFamily: 'Lilita One, cursive', fontSize: 18, color: '#FFFFFF', letterSpacing: 0.5 }}>JEEPrep</span>
+    <aside className="sidebar">
+      <div className="sblogo"><span className="dot" /><span>JEEPrep</span></div>
+      <div className="sbsec">Menu</div>
+      {navItems.map(item => (
+        <Link key={item.href} href={item.href}
+          className={`sbi ${pathname === item.href || (item.href === '/dashboard' && pathname.startsWith('/dashboard')) ? 'active' : ''}`}>
+          <span className="ic">{item.ic}</span>{item.label}
         </Link>
+      ))}
 
-        {/* Center pill nav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: '4px' }}>
-          {[
-            { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} /> },
-            { href: '/', label: 'Home', icon: <Home size={14} /> },
-            ...(isAdmin ? [{ href: '/admin', label: 'Admin', icon: <ShieldCheck size={14} /> }] : []),
-          ].map(l => (
-            <Link key={l.href} href={l.href} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 14px', borderRadius: 10,
-              fontSize: 13, fontWeight: 800,
-              color: pathname === l.href ? '#1A1A2E' : 'rgba(255,255,255,0.6)',
-              background: pathname === l.href ? '#FFFFFF' : 'transparent',
-              transition: 'all 0.15s',
-              fontFamily: 'Nunito, sans-serif',
-            }}>{l.icon}{l.label}</Link>
-          ))}
-        </div>
-      </div>
+      {/* Book sections */}
+      <div className="sbsec" style={{ marginTop: 16 }}>Books</div>
+      <Link href="/books/hcv" className="sbi" style={{ fontSize: 12 }}>
+        <span className="ic">⚡</span>HCV
+      </Link>
+      <Link href="/books/irodov" className="sbi" style={{ fontSize: 12 }}>
+        <span className="ic">🔬</span>Irodov
+      </Link>
 
-      {/* Right — user info */}
+      <div className="sbsp" />
+
       {!loading && user && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: '#FFFFFF', fontFamily: 'Nunito, sans-serif' }}>
-              Hello, {user.email?.split('@')[0] ?? 'Student'}
-            </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-              ⚡ JEEPrep Member
-            </div>
+        <div className="sbuser" onClick={handleLogout} title="Click to sign out">
+          <div className="sbav">{ini}</div>
+          <div>
+            <div className="sbname">{name}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>Sign out</div>
           </div>
-          <div style={{ width: 38, height: 38, borderRadius: 12, background: '#7C3AED', border: '3px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Lilita One, cursive', fontSize: 16, color: '#fff' }}>
-            {user.email?.[0]?.toUpperCase() ?? 'U'}
-          </div>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
-            <Bell size={16} color="rgba(255,255,255,0.7)" />
-            <div style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', background: '#EF4444', border: '1.5px solid #1E1E2E' }} />
-          </div>
-          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 10, background: 'rgba(239,68,68,0.15)', color: '#F87171', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 800, fontFamily: 'Nunito, sans-serif' }}>
-            <LogOut size={12} /> Out
-          </button>
         </div>
       )}
       {!loading && !user && (
-        <Link href="/login" style={{ padding: '8px 20px', borderRadius: 12, background: '#7C3AED', color: '#fff', fontSize: 13, fontWeight: 800, fontFamily: 'Nunito, sans-serif' }}>Sign in</Link>
+        <Link href="/login" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, background: 'var(--or)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
+          Sign in
+        </Link>
       )}
-    </nav>
+    </aside>
   );
 }

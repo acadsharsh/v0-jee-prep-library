@@ -1,55 +1,33 @@
 'use client';
-import { RotateCcw, Home, Trophy } from 'lucide-react';
+import { RotateCcw, Home } from 'lucide-react';
 
 interface QuizResultsProps {
-  result: { totalQuestions: number; correctAnswers: number; answers: Record<string, string>; score?: number };
+  result: { totalQuestions:number; correctAnswers:number; answers:Record<string,string>; score?:number };
   onRetry: () => void;
   onHome: () => void;
 }
 
 export function QuizResults({ result, onRetry, onHome }: QuizResultsProps) {
-  const pct = result.score ?? Math.round((result.correctAnswers / result.totalQuestions) * 100);
+  const pct = result.score ?? Math.round((result.correctAnswers/result.totalQuestions)*100);
   const wrong = result.totalQuestions - result.correctAnswers;
-  const cfg = pct >= 75
-    ? { bg: '#D1FAE5', cardBg: '#A7F3D0', color: '#065F46', emoji: '🏆', label: 'Excellent!', icon: '#10B981' }
-    : pct >= 50
-    ? { bg: '#FEF9C3', cardBg: '#FDE68A', color: '#92400E', emoji: '💪', label: 'Good effort!', icon: '#F59E0B' }
-    : { bg: '#FEE2E2', cardBg: '#FCA5A5', color: '#991B1B', emoji: '📚', label: 'Keep grinding!', icon: '#EF4444' };
+  const msg = pct>=80?'Excellent!':pct>=60?'Good job! Keep going':pct>=40?'More practice needed':'Go over this chapter again';
 
   return (
-    <div style={{ minHeight: 'calc(100vh - 64px)', background: '#F2F4F8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div className="fade-up" style={{ width: '100%', maxWidth: 500, background: '#FFFFFF', borderRadius: 28, overflow: 'hidden', border: '1.5px solid #E8EAF0', boxShadow: '0 24px 80px rgba(0,0,0,0.09)' }}>
-
-        {/* Score header */}
-        <div style={{ padding: '48px 36px 36px', background: cfg.bg, textAlign: 'center' }}>
-          <div style={{ fontSize: 64, marginBottom: 8 }}>{cfg.emoji}</div>
-          <div style={{ fontFamily: 'Lilita One, cursive', fontSize: 80, color: cfg.color, lineHeight: 1 }}>{pct}<span style={{ fontSize: 40 }}>%</span></div>
-          <div style={{ fontFamily: 'Lilita One, cursive', fontSize: 22, color: cfg.color, marginTop: 6 }}>{cfg.label}</div>
-        </div>
-
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', borderBottom: '1.5px solid #F0F0F8' }}>
-          {[
-            { label: 'Correct', val: result.correctAnswers, bg: '#D1FAE5', color: '#065F46' },
-            { label: 'Wrong', val: wrong, bg: '#FEE2E2', color: '#991B1B' },
-            { label: 'Total', val: result.totalQuestions, bg: '#EDE9FE', color: '#4C1D95' },
-          ].map((s, i) => (
-            <div key={i} style={{ padding: '22px', textAlign: 'center', background: s.bg, borderRight: i < 2 ? '1.5px solid rgba(255,255,255,0.5)' : 'none' }}>
-              <div style={{ fontFamily: 'Lilita One, cursive', fontSize: 40, color: s.color }}>{s.val}</div>
-              <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: s.color, opacity: 0.65, marginTop: 4 }}>{s.label}</div>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'80vh',padding:24,background:'var(--bg)'}}>
+      <div style={{background:'#fff',borderRadius:'var(--r)',border:'1.5px solid var(--bd)',padding:36,textAlign:'center',maxWidth:480,width:'100%',boxShadow:'var(--sh)'}}>
+        <div style={{fontSize:44,marginBottom:12}}>🎯</div>
+        <div style={{fontFamily:'Syne,sans-serif',fontSize:68,fontWeight:800,lineHeight:1,marginBottom:5,color:pct>=75?'var(--gn)':pct>=50?'var(--yw)':'var(--rd)'}}>{pct}%</div>
+        <p style={{color:'var(--mu)',fontSize:14,marginBottom:28}}>{msg}</p>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:28}}>
+          {[{bg:'var(--gnl)',v:result.correctAnswers,l:'Correct',c:'#166534'},{bg:'var(--rdl)',v:wrong,l:'Wrong',c:'#991B1B'},{bg:'var(--bg)',v:result.totalQuestions,l:'Total',c:'var(--mu)'}].map((s,i)=>(
+            <div key={i} style={{padding:14,borderRadius:'var(--rs)',background:s.bg}}>
+              <div style={{fontFamily:'Syne,sans-serif',fontSize:24,fontWeight:800,color:s.c}}>{s.v}</div>
+              <div style={{fontSize:11,marginTop:2,fontWeight:600,color:s.c}}>{s.l}</div>
             </div>
           ))}
         </div>
-
-        {/* Buttons */}
-        <div style={{ padding: '20px 24px', display: 'flex', gap: 10 }}>
-          <button onClick={onRetry} className="btn-dash-primary" style={{ flex: 1, justifyContent: 'center' }}>
-            <RotateCcw size={14} /> Try again
-          </button>
-          <button onClick={onHome} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>
-            <Home size={14} /> Dashboard
-          </button>
-        </div>
+        <button onClick={onRetry} style={{width:'100%',marginBottom:9,padding:12,background:'var(--dk)',color:'#fff',border:'none',borderRadius:'var(--rs)',fontSize:13,fontWeight:700,fontFamily:'Syne,sans-serif',cursor:'pointer'}}>Try Again</button>
+        <button onClick={onHome} style={{width:'100%',padding:12,background:'var(--pu)',color:'#fff',border:'none',borderRadius:'var(--rs)',fontSize:13,fontWeight:700,fontFamily:'Syne,sans-serif',cursor:'pointer'}}>Back to Practice</button>
       </div>
     </div>
   );

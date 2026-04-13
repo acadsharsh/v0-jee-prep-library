@@ -4,40 +4,31 @@ import { Book } from '@/lib/types';
 
 interface BookshelfProps { books: Book[]; isLoading: boolean; }
 
-const STYLES = [
-  { bg: '#FDE68A', text: '#92400E', icon: '⚡' },
-  { bg: '#DDD6FE', text: '#4C1D95', icon: '🔬' },
-  { bg: '#FBCFE8', text: '#831843', icon: '∑' },
-  { bg: '#A7F3D0', text: '#064E3B', icon: '🧲' },
-];
+const BCOLORS: Record<string,string> = { hcv:'#7C6FF7', irodov:'#FF6B35', ncert:'#22C55E', dc:'#3B82F6', sl:'#EC4899', vk:'#EF4444', ms:'#8B5CF6', cengage:'#F59E0B' };
+const BSHORT: Record<string,string> = { hcv:'HCV', irodov:'IRD', ncert:'NCRT', dc:'DCP', sl:'SL', vk:'VKJ', ms:'MSC', cengage:'CNG' };
+function bColor(slug: string) { for (const k of Object.keys(BCOLORS)) { if (slug.toLowerCase().includes(k)) return BCOLORS[k]; } return '#7C6FF7'; }
+function bShort(title: string) { for (const k of Object.keys(BSHORT)) { if (title.toLowerCase().includes(k)) return BSHORT[k]; } return title.slice(0,3).toUpperCase(); }
 
 export function Bookshelf({ books, isLoading }: BookshelfProps) {
   if (isLoading) return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
-      {[...Array(4)].map((_, i) => <div key={i} style={{ height: 150, borderRadius: 18, background: '#F2F4F8' }} />)}
+    <div className="bcards">
+      {[...Array(4)].map((_,i) => <div key={i} style={{ height:150, borderRadius:'var(--r)', background:'var(--bg)' }} />)}
     </div>
   );
-  if (!books.length) return <div style={{ padding: '48px', textAlign: 'center', borderRadius: 18, background: '#F2F4F8', color: '#7C8DB0', fontWeight: 800 }}>No books yet</div>;
+  if (!books.length) return <div style={{ fontSize:13, color:'var(--mu)', padding:'16px 0' }}>No books available yet.</div>;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
-      {books.map((book, idx) => {
-        const s = STYLES[idx % STYLES.length];
-        return (
-          <Link key={book.id} href={`/books/${book.slug}`}>
-            <div className="book-tile" style={{ background: s.bg }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-4px)'; el.style.boxShadow = '0 16px 48px rgba(0,0,0,0.12)'; }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(0)'; el.style.boxShadow = 'none'; }}
-            >
-              <div style={{ fontSize: 44 }}>{s.icon}</div>
-              <div>
-                <div style={{ fontFamily: 'Lilita One, cursive', fontSize: 16, color: s.text, lineHeight: 1.2, marginBottom: 4 }}>{book.title}</div>
-                <div style={{ fontSize: 11, color: s.text, opacity: 0.65, fontWeight: 800 }}>View chapters →</div>
-              </div>
-            </div>
-          </Link>
-        );
-      })}
+    <div className="bcards">
+      {books.map(b => (
+        <Link key={b.id} href={`/books/${b.slug}`}>
+          <div className="btile">
+            <div className="bspine" style={{ background: bColor(b.slug) }}>{bShort(b.title)}</div>
+            <div className="bname">{b.title}</div>
+            <div className="bsublbl">Chapter-wise practice</div>
+            <div className="bcnt">Practice →</div>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }

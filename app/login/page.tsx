@@ -1,5 +1,4 @@
 'use client';
-import { Navigation } from '@/components/navigation';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -23,33 +22,22 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <Navigation />
-      <main className="dash-root" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div className="fade-up" style={{ width: '100%', maxWidth: 420, background: '#FFFFFF', borderRadius: 24, overflow: 'hidden', border: '1.5px solid #E8EAF0', boxShadow: '0 20px 60px rgba(0,0,0,0.07)' }}>
-          <div style={{ padding: '32px 32px 24px', background: '#EDE9FE', borderBottom: '1px solid #E8EAF0' }}>
-            <div style={{ fontFamily: 'Lilita One, cursive', fontSize: 26, color: '#1A1A2E', marginBottom: 4 }}>Welcome back! 👋</div>
-            <div style={{ fontSize: 14, color: '#7C3AED', fontWeight: 700 }}>Sign in to continue your prep</div>
-          </div>
-          <div style={{ padding: '28px 32px' }}>
-            {error && <div style={{ padding: '10px 14px', borderRadius: 12, marginBottom: 16, background: '#FEE2E2', color: '#EF4444', fontSize: 13, fontWeight: 800 }}>{error}</div>}
-            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {[{ label: 'Email', type: 'email', ph: 'you@example.com', val: email, set: setEmail }, { label: 'Password', type: 'password', ph: '••••••••', val: password, set: setPassword }].map((f, i) => (
-                <div key={i}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#7C8DB0', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{f.label}</div>
-                  <input type={f.type} placeholder={f.ph} value={f.val} required onChange={e => f.set(e.target.value)} />
-                </div>
-              ))}
-              <button type="submit" disabled={loading} className="btn-dash-primary" style={{ marginTop: 6, justifyContent: 'center', width: '100%', padding: '13px', fontSize: 15, opacity: loading ? 0.6 : 1 }}>
-                {loading ? 'Signing in…' : 'Sign in →'}
-              </button>
-            </form>
-            <p style={{ fontSize: 13, color: '#7C8DB0', textAlign: 'center', marginTop: 20, fontWeight: 700 }}>
-              No account? <Link href="/signup" style={{ color: '#7C3AED', fontWeight: 900 }}>Create one free</Link>
-            </p>
-          </div>
+    <div className="auth-root">
+      <div className="auth-card fade-up">
+        <h2 style={{ fontFamily:'Syne,sans-serif',fontSize:22,fontWeight:800,marginBottom:4,color:'var(--dk)' }}>Welcome back 👋</h2>
+        <p style={{ fontSize:13,color:'var(--mu)',marginBottom:24 }}>Sign in to continue your prep</p>
+        {error && <div style={{ padding:'10px 14px',borderRadius:10,marginBottom:14,background:'var(--rdl)',color:'var(--rd)',fontSize:13,fontWeight:600 }}>{error}</div>}
+        <form onSubmit={submit}>
+          <div className="fg"><label>Email</label><input type="email" placeholder="you@email.com" value={email} required onChange={e=>setEmail(e.target.value)} /></div>
+          <div className="fg"><label>Password</label><input type="password" placeholder="••••••••" value={password} required onChange={e=>setPassword(e.target.value)} /></div>
+          <button type="submit" disabled={loading} style={{ width:'100%',padding:12,background:'var(--dk)',color:'#fff',border:'none',borderRadius:'var(--rs)',fontSize:14,fontWeight:700,fontFamily:'Syne,sans-serif',cursor:'pointer',marginTop:6,transition:'all .2s',opacity:loading?.6:1 }}>
+            {loading?'Signing in…':'Sign In'}
+          </button>
+        </form>
+        <div style={{ textAlign:'center',marginTop:14,fontSize:12,color:'var(--mu)' }}>
+          No account? <Link href="/signup" style={{ color:'var(--pu)',fontWeight:600 }}>Create one</Link>
         </div>
-      </main>
-    </>
+      </div>
+    </div>
   );
 }

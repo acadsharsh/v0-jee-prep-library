@@ -1,52 +1,65 @@
 'use client';
 import Link from 'next/link';
 import { Chapter } from '@/lib/types';
-import { ChevronRight } from 'lucide-react';
 
 interface ChapterBrowserProps { chapters: { [classId: string]: Chapter[] }; bookSlug: string; isLoading: boolean; }
 
-const CLASS_CFG: Record<string, { label: string; bg: string; color: string }> = {
-  '11':        { label: 'Class XI',  bg: '#EDE9FE', color: '#7C3AED' },
-  '12':        { label: 'Class XII', bg: '#FEF9C3', color: '#CA8A04' },
-  'common':    { label: 'Common',    bg: '#D1FAE5', color: '#059669' },
-  '11_and_12': { label: 'XI & XII',  bg: '#DBEAFE', color: '#2563EB' },
-};
+const CLASS_LABELS: Record<string,string> = { '11':'Class XI', '12':'Class XII', 'common':'Common', '11_and_12':'XI & XII' };
+const CLASS_COLORS: Record<string,string> = { '11':'#7C6FF7', '12':'#FF6B35', 'common':'#22C55E', '11_and_12':'#3B82F6' };
 
 export function ChapterBrowser({ chapters, bookSlug, isLoading }: ChapterBrowserProps) {
   if (isLoading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {[...Array(6)].map((_, i) => <div key={i} style={{ height: 58, borderRadius: 14, background: '#F2F4F8' }} />)}
+    <div>
+      {[...Array(5)].map((_,i) => <div key={i} style={{ height:54,borderRadius:12,background:'var(--bg)',marginBottom:8 }} />)}
     </div>
   );
 
+  const allChapters = Object.entries(chapters);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-      {Object.entries(chapters).map(([classId, classChapters]) => {
-        const cfg = CLASS_CFG[classId] ?? { label: classId, bg: '#EDE9FE', color: '#7C3AED' };
+    <div>
+      {allChapters.map(([classId, classChapters]) => {
+        const color = CLASS_COLORS[classId] ?? '#7C6FF7';
+        const label = CLASS_LABELS[classId] ?? classId;
         return (
-          <div key={classId}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <div style={{ padding: '5px 16px', borderRadius: 100, background: cfg.bg }}>
-                <span style={{ fontSize: 12, fontWeight: 900, color: cfg.color, textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: 'Nunito, sans-serif' }}>{cfg.label}</span>
+          <div key={classId} style={{ marginBottom:32 }}>
+            {/* Class header */}
+            <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,paddingBottom:10,borderBottom:'1px solid var(--bd)' }}>
+              <div style={{ display:'flex',alignItems:'center',gap:10 }}>
+                <div style={{ width:28,height:28,borderRadius:8,background:color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'#fff' }}>
+                  {label.slice(0,1)}
+                </div>
+                <span style={{ fontFamily:'Syne,sans-serif',fontSize:16,fontWeight:700 }}>{label}</span>
+                <span style={{ fontSize:11,color:'var(--mu)',background:'var(--bg)',padding:'2px 9px',borderRadius:100,fontWeight:600 }}>
+                  {classChapters.length} chapters
+                </span>
               </div>
-              <span style={{ fontSize: 12, color: '#7C8DB0', fontWeight: 700 }}>{classChapters.length} chapters</span>
+              <span style={{ fontSize:12,color:'var(--mu)' }}>Showing all ({classChapters.length})</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {classChapters.sort((a, b) => a.chapter_number - b.chapter_number).map((ch) => (
+
+            {/* Chapter rows — image 1 style */}
+            <div style={{ background:'#fff',borderRadius:'var(--r)',border:'1.5px solid var(--bd)',overflow:'hidden' }}>
+              {classChapters.sort((a,b) => a.chapter_number - b.chapter_number).map((ch, idx, arr) => (
                 <Link key={ch.id} href={`/books/${bookSlug}/chapters/${ch.slug}`}>
                   <div style={{
-                    display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',
-                    borderRadius: 14, background: '#FFFFFF', border: '1.5px solid #E8EAF0',
-                    cursor: 'pointer', transition: 'all 0.15s',
+                    display:'flex',alignItems:'center',justifyContent:'space-between',
+                    padding:'16px 20px',
+                    borderBottom: idx < arr.length-1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
+                    cursor:'pointer',transition:'background .12s',
                   }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.background = cfg.bg; el.style.borderColor = cfg.color + '50'; el.style.transform = 'translateX(4px)'; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.background = '#FFFFFF'; el.style.borderColor = '#E8EAF0'; el.style.transform = 'translateX(0)'; }}
+                    onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.background='rgba(124,111,247,.04)'}
+                    onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.background='transparent'}
                   >
-                    <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Space Mono, monospace', fontSize: 12, fontWeight: 700, color: cfg.color }}>
-                      {String(ch.chapter_number).padStart(2, '0')}
+                    <div style={{ display:'flex',alignItems:'center',gap:14 }}>
+                      {/* Chapter icon */}
+                      <div style={{ width:36,height:36,borderRadius:10,background:`${color}15`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color,fontFamily:'Syne,sans-serif',flexShrink:0 }}>
+                        {String(ch.chapter_number).padStart(2,'0')}
+                      </div>
+                      <span style={{ fontSize:14,fontWeight:600,color:'var(--tx)' }}>{ch.title}</span>
                     </div>
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 800, color: '#1A1A2E', fontFamily: 'Nunito, sans-serif' }}>{ch.title}</span>
-                    <ChevronRight size={16} color="#B4BAD4" />
+                    <div style={{ display:'flex',alignItems:'center',gap:16 }}>
+                      <span style={{ fontSize:12,color:'var(--mu)' }}>Practice →</span>
+                    </div>
                   </div>
                 </Link>
               ))}
