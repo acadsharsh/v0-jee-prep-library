@@ -1,27 +1,28 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Simple cookie-based check — no external package needed
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
+  
+  // Check for supabase auth cookie (sb-*-auth-token)
+  const cookies = req.cookies;
+  const hasSession = [...cookies.getAll()].some(
+    c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
+  );
 
-  // Refresh session if it exists — keeps it alive
-  const { data: { session } } = await supabase.auth.getSession();
+  const pathname = req.nextUrl.pathname;
 
-  // Redirect /dashboard to /login if not authed
-  if (req.nextUrl.pathname.startsWith('/dashboard') && !session) {
-    return NextResponse.redirect(new URL('/login', req.url));
-  }
-
-  // Redirect /login or /signup to /dashboard if already authed
-  if ((req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/signup') && session) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+  // Protect dashboard
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/mistakes') || pathname.startsWith('/flashcards')) {
+    if (!hasSession) {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
   }
 
   return res;
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup'],
+  matcher: ['/dashboard/:path*', '/mistakes/:path*', '/flashcards/:path*'],
 };
