@@ -8,7 +8,7 @@ export function Navigation() {
   const router = useRouter();
   const pathname = usePathname();
   const isLanding = pathname === '/';
-  const handleLogout = async () => { await logout(); router.push('/'); };
+  const handleLogout = async () => { await logout(); window.location.href = '/'; };
 
   if (isLanding) return null;
 
@@ -17,16 +17,17 @@ export function Navigation() {
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', ic: '◼' },
-    { href: '/mistakes', label: 'Mistakes', ic: '✗' },
-    { href: '/flashcards', label: 'Flashcards', ic: '◈' },
+    { href: '/mistakes', label: 'Mistakes', ic: '✗', accent: '#ff4d4d' },
+    { href: '/flashcards', label: 'Flashcards', ic: '◈', accent: '#3d9eff' },
+    { href: '/diagram', label: 'Lab & Graphs', ic: '⚗', accent: '#0fd68a' },
     { href: '/', label: 'Library', ic: '⊞' },
-    ...(isAdmin ? [{ href: '/admin', label: 'Admin', ic: '⚙' }] : []),
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin', ic: '⚙', accent: '#b06ef3' }] : []),
   ];
 
   return (
     <aside className="neo-sidebar">
       <div className="neo-logo">
-        <span style={{ fontFamily: 'Space Mono, monospace', fontWeight: 700 }}>JEEP*</span>
+        <span style={{ fontFamily: 'Space Mono, monospace', fontWeight: 700, letterSpacing: 1 }}>JEEP*</span>
       </div>
 
       <div className="neo-sec">Navigate</div>
@@ -37,7 +38,7 @@ export function Navigation() {
         return (
           <Link key={item.href} href={item.href}
             className={`neo-sbi ${isActive ? 'active' : ''}`}
-            style={item.ic === '✗' && !isActive ? { color: '#ff4d4d88' } : {}}>
+            style={!isActive && item.accent ? { color: item.accent + '88' } : {}}>
             <span className="ic" style={{ fontFamily: 'Space Mono, monospace' }}>{item.ic}</span>
             {item.label}
           </Link>
@@ -60,7 +61,7 @@ export function Navigation() {
         </div>
       )}
       {!loading && !user && (
-        <Link href="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', background: '#f5d90a', color: '#0a0a0a', border: '2px solid #f5d90a', fontWeight: 700, fontSize: 13, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sign in →</Link>
+        <Link href="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', background: '#f5d90a', color: '#0a0a0a', border: '2px solid #f5d90a', fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sign in →</Link>
       )}
     </aside>
   );
