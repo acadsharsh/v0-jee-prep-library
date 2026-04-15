@@ -120,9 +120,9 @@ export default function MistakesPage() {
   );
 
   return (
-    <div className="app-shell">
+    <div style={{ display: "flex", height: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <Navigation />
-      <div className="main-area">
+      <div style={{ flex: 1, overflowY: "auto" }}>
         <div className="topbar">
           <div>
             <div className="topbar-title">Mistake Notebook</div>

@@ -90,9 +90,15 @@ export function QuizInterface({ quiz, onSubmit }: Props) {
         </div>
 
         {/* Question */}
-        <div style={{ marginBottom: 28 }} className="q-text">
+        <div style={{ marginBottom: 28 }}>
           {qType === 'msq' && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--lime)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>✦ Select all correct answers</div>}
-          <MathText>{q.questionText}</MathText>
+          <div className="q-text"><MathText>{q.questionText}</MathText></div>
+          {q.imageUrl && (
+            <div style={{ marginTop: 16, background: '#fff', borderRadius: 'var(--r-lg)', overflow: 'hidden', border: '1px solid var(--border)', display: 'inline-block', maxWidth: '100%' }}>
+              <img src={q.imageUrl} alt={q.imageCaption ?? 'Question diagram'} style={{ maxWidth: '100%', maxHeight: 320, display: 'block', objectFit: 'contain' }} />
+              {q.imageCaption && <div style={{ padding: '6px 12px', fontSize: 11, color: '#666', textAlign: 'center', fontStyle: 'italic' }}>{q.imageCaption}</div>}
+            </div>
+          )}
         </div>
 
         {/* MCQ */}
@@ -144,10 +150,15 @@ export function QuizInterface({ quiz, onSubmit }: Props) {
         )}
 
         {/* Explanation */}
-        {isRev && q.explanation && (
+        {isRev && (q.explanation || q.explanationImageUrl) && (
           <div className="solution-box fade-up" style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--yellow)', marginBottom: 8 }}>Solution</div>
-            <MathText style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--muted)' }}>{q.explanation}</MathText>
+            {q.explanation && <MathText style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--muted)' }}>{q.explanation}</MathText>}
+            {q.explanationImageUrl && (
+              <div style={{ marginTop: 10, background: '#fff', borderRadius: 8, overflow: 'hidden', display: 'inline-block', maxWidth: '100%' }}>
+                <img src={q.explanationImageUrl} alt="Explanation diagram" style={{ maxWidth: '100%', maxHeight: 280, display: 'block', objectFit: 'contain' }} />
+              </div>
+            )}
           </div>
         )}
 

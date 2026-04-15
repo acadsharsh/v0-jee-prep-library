@@ -29,9 +29,9 @@ export default function BookPage() {
   }, [bookSlug]);
 
   return (
-    <div className="app-shell">
+    <div style={{ display: "flex", height: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <Navigation />
-      <div className="main-area">
+      <div style={{ flex: 1, overflowY: "auto" }}>
         <div className="topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Link href="/dashboard" style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500 }}>← Dashboard</Link>
