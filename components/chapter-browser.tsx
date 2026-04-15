@@ -2,45 +2,44 @@
 import Link from 'next/link';
 import { Chapter } from '@/lib/types';
 
-interface ChapterBrowserProps { chapters:{[classId:string]:Chapter[]}; bookSlug:string; isLoading:boolean; }
+interface ChapterBrowserProps { chapters: { [classId: string]: Chapter[] }; bookSlug: string; isLoading: boolean; }
 
-const COLORS: Record<string,string> = { '11':'#f5d90a', '12':'#ff7a00', 'common':'#0fd68a', '11_and_12':'#3d9eff' };
-const LABELS: Record<string,string> = { '11':'Class XI', '12':'Class XII', 'common':'Common', '11_and_12':'XI & XII' };
+const CLASS_CFG: Record<string, { label: string; color: string; bg: string }> = {
+  '11':        { label: 'Class XI',   color: 'var(--yellow)',  bg: 'rgba(245,200,66,0.1)' },
+  '12':        { label: 'Class XII',  color: 'var(--orange)',  bg: 'rgba(251,146,60,0.1)' },
+  'common':    { label: 'Common',     color: 'var(--lime)',    bg: 'rgba(74,222,128,0.1)' },
+  '11_and_12': { label: 'XI & XII',   color: 'var(--sky)',     bg: 'rgba(96,165,250,0.1)' },
+};
 
 export function ChapterBrowser({ chapters, bookSlug, isLoading }: ChapterBrowserProps) {
   if (isLoading) return (
-    <div style={{display:'flex',flexDirection:'column',gap:4}}>
-      {[...Array(6)].map((_,i)=><div key={i} style={{height:54,background:'#fafafa',border:'3px solid #eee'}}/>)}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {[...Array(6)].map((_, i) => <div key={i} style={{ height: 56, borderRadius: 'var(--r-lg)', background: 'var(--surface)' }} />)}
     </div>
   );
 
   return (
-    <div style={{display:'flex',flexDirection:'column',gap:28}}>
-      {Object.entries(chapters).map(([classId, classChapters])=>{
-        const color = COLORS[classId]??'#f5d90a';
-        const label = LABELS[classId]??classId;
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+      {Object.entries(chapters).map(([classId, classChapters]) => {
+        const cfg = CLASS_CFG[classId] ?? { label: classId, color: 'var(--yellow)', bg: 'rgba(245,200,66,0.1)' };
         return (
           <div key={classId}>
-            {/* Class header */}
-            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
-              <div style={{background:color,border:'3px solid #0a0a0a',padding:'4px 14px',fontFamily:'Space Mono,monospace',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'#0a0a0a'}}>
-                {label}
-              </div>
-              <div style={{fontFamily:'Space Mono,monospace',fontSize:11,fontWeight:700,color:'#999'}}>
-                {classChapters.length} CHAPTERS
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <span className="badge" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}40`, fontSize: 11, padding: '4px 12px' }}>{cfg.label}</span>
+              <span style={{ fontSize: 11, color: 'var(--faint)', fontWeight: 600 }}>{classChapters.length} chapters</span>
             </div>
-
-            {/* Chapter rows */}
-            <div style={{border:'3px solid #0a0a0a',boxShadow:'4px 4px 0 #0a0a0a',overflow:'hidden'}}>
-              {classChapters.sort((a,b)=>a.chapter_number-b.chapter_number).map((ch,idx,arr)=>(
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {classChapters.sort((a, b) => a.chapter_number - b.chapter_number).map(ch => (
                 <Link key={ch.id} href={`/books/${bookSlug}/chapters/${ch.slug}`}>
-                  <div className="neo-chap-row" style={{borderBottom:idx<arr.length-1?'2px solid #e8e8e8':'none'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:14}}>
-                      <div className="neo-chap-num">{String(ch.chapter_number).padStart(2,'0')}</div>
-                      <span style={{fontSize:14,fontWeight:600}}>{ch.title}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 18px', borderRadius: 'var(--r-lg)', background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = cfg.color + '40'; el.style.background = cfg.bg; el.style.transform = 'translateX(4px)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'var(--border)'; el.style.background = 'var(--surface)'; el.style.transform = 'translateX(0)'; }}
+                  >
+                    <div style={{ width: 32, height: 32, borderRadius: 'var(--r-sm)', background: cfg.bg, border: `1px solid ${cfg.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: cfg.color, flexShrink: 0 }}>
+                      {String(ch.chapter_number).padStart(2, '0')}
                     </div>
-                    <span className="chap-arrow">→</span>
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{ch.title}</span>
+                    <span style={{ fontSize: 12, color: 'var(--faint)' }}>→</span>
                   </div>
                 </Link>
               ))}

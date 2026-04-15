@@ -3,39 +3,42 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navigation } from '@/components/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
-interface AnalyticsData {
+interface Analytics {
   totalAttempts: number; avgScore: number; totalQuestions: number; totalWrong: number;
   accuracy: number; streak: number; mistakes: number; dueFlashcards: number;
   badges: Array<{ badge_type: string; earned_at: string }>;
   chapterAccuracy: Array<{ id: string; title: string; bookTitle: string; total: number; correct: number; accuracy: number }>;
   topMistakeChapters: Array<{ id: string; title: string; bookTitle: string; count: number }>;
-  recentAttempts: Array<{ score: number; completed_at: string }>;
+  recentAttempts: Array<{ score: number; completed_at: string; quiz_id: string }>;
   dailyActivity: Array<{ date: string; questions_attempted: number; correct_count: number }>;
 }
+interface Book { id: string; slug: string; title: string; subject?: string; }
 
-interface Book { id: string; slug: string; title: string; }
-
-const BADGE_INFO: Record<string, { label: string; icon: string; color: string }> = {
-  first_attempt: { label: 'First Step', icon: '🚀', color: '#3d9eff' },
-  century: { label: 'Century', icon: '💯', color: '#f5d90a' },
-  perfectionist: { label: 'Perfectionist', icon: '⭐', color: '#b8f72b' },
-  streak_7: { label: '7-Day Streak', icon: '🔥', color: '#ff7a00' },
+const BADGE_META: Record<string, { icon: string; label: string }> = {
+  first_attempt: { icon: '🚀', label: 'First Step' },
+  century: { icon: '💯', label: 'Century' },
+  perfectionist: { icon: '⭐', label: 'Perfect Score' },
+  streak_7: { icon: '🔥', label: '7-Day Streak' },
 };
 
-const BCOLORS: Record<string, string> = { hcv: '#f5d90a', irodov: '#ff7a00', ncert: '#0fd68a', dc: '#3d9eff', sl: '#ff6fd8', vk: '#ff4d4d', ms: '#b06ef3', cengage: '#b8f72b' };
-function bColor(slug: string) { for (const k of Object.keys(BCOLORS)) { if (slug.toLowerCase().includes(k)) return BCOLORS[k]; } return '#f5d90a'; }
-function bShort(title: string) { const m: Record<string, string> = { hcv: 'HCV', irodov: 'IRD', ncert: 'NCRT', dc: 'DCP', sl: 'SL', vk: 'VKJ', ms: 'MSC', cengage: 'CNG' }; for (const k of Object.keys(m)) { if (title.toLowerCase().includes(k)) return m[k]; } return title.slice(0, 3).toUpperCase(); }
-const bgScore = (s: number) => s >= 75 ? '#b8f72b' : s >= 50 ? '#f5d90a' : '#ff4d4d';
-const tcScore = (s: number) => s >= 50 ? '#0a0a0a' : '#fff';
+function scoreColor(s: number) { return s >= 75 ? 'var(--lime)' : s >= 50 ? 'var(--yellow)' : 'var(--coral)'; }
+function scoreBadgeClass(s: number) { return s >= 75 ? 'badge-lime' : s >= 50 ? 'badge-yellow' : 'badge-coral'; }
+
+const BOOK_GRADIENTS = [
+  'linear-gradient(135deg, #f5c842 0%, #fb923c 100%)',
+  'linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%)',
+  'linear-gradient(135deg, #4ade80 0%, #2dd4bf 100%)',
+  'linear-gradient(135deg, #f472b6 0%, #f87171 100%)',
+  'linear-gradient(135deg, #60a5fa 0%, #818cf8 100%)',
+];
 
 export default function DashboardPage() {
   const { user, session, loading } = useAuth();
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -46,10 +49,8 @@ export default function DashboardPage() {
         fetch('/api/books'),
         fetch('/api/analytics', { headers: { Authorization: `Bearer ${session.access_token}` } }),
       ]);
-      const bd = await booksRes.json();
-      const ad = await analyticsRes.json();
-      setBooks(Array.isArray(bd) ? bd : []);
-      setAnalytics(ad);
+      setBooks(await booksRes.json());
+      setAnalytics(await analyticsRes.json());
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
   }, [session?.access_token]);
@@ -61,114 +62,208 @@ export default function DashboardPage() {
   }, [user, loading, fetchData, router]);
 
   const name = user?.email?.split('@')[0] ?? 'Student';
-  const ini = user?.email?.slice(0, 2).toUpperCase() ?? 'JE';
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const todayIdx = (new Date().getDay() + 6) % 7;
+  const a = analytics;
+
+  const days7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    const key = d.toISOString().split('T')[0];
+    const act = a?.dailyActivity?.find(x => x.date === key);
+    return { label: d.toLocaleDateString('en', { weekday: 'short' }).slice(0, 2), date: key, count: act?.questions_attempted ?? 0, correct: act?.correct_count ?? 0 };
+  });
+  const maxDay = Math.max(...days7.map(d => d.count), 1);
 
   if (loading) return (
-    <div className="neo-shell">
+    <div className="app-shell">
       <Navigation />
-      <div className="neo-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '4px solid #333', borderTopColor: '#f5d90a', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-        </div>
+      <div className="main-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, border: '3px solid var(--surface3)', borderTopColor: 'var(--yellow)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
   );
 
-  const a = analytics;
-
   return (
-    <div className="neo-shell">
+    <div className="app-shell">
       <Navigation />
-      <div className="neo-main">
+      <div className="main-area">
         {/* Topbar */}
-        <div className="neo-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 3, height: 22, background: '#f5d90a' }} />
-            <span className="neo-topbar-title">Dashboard</span>
+        <div className="topbar">
+          <div>
+            <div className="topbar-title">Dashboard</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1 }}>Welcome back, {name} 👋</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="topbar-right">
             {a?.dueFlashcards ? (
-              <Link href="/flashcards" style={{ background: '#ff4d4d', border: '2px solid #0a0a0a', padding: '5px 12px', fontFamily: 'Space Mono,monospace', fontSize: 11, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
-                📚 {a.dueFlashcards} DUE
+              <Link href="/flashcards" className="badge badge-coral" style={{ fontSize: 12, gap: 6, padding: '5px 12px' }}>
+                📚 {a.dueFlashcards} cards due
               </Link>
             ) : null}
-            <div style={{ padding: '6px 14px', background: '#0a0a0a', color: '#f5d90a', fontFamily: 'Space Mono,monospace', fontSize: 12, fontWeight: 700 }}>{ini}</div>
+            {a?.badges?.map(b => (
+              <span key={b.badge_type} title={BADGE_META[b.badge_type]?.label} style={{ fontSize: 20 }}>
+                {BADGE_META[b.badge_type]?.icon ?? '🏅'}
+              </span>
+            ))}
           </div>
         </div>
 
-        <div style={{ padding: '24px' }}>
-          {/* Greeting */}
-          <div style={{ background: '#f5d90a', border: '3px solid #0a0a0a', boxShadow: '6px 6px 0 #0a0a0a', padding: '20px 24px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#555', marginBottom: 4 }}>// WELCOME BACK</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#0a0a0a', letterSpacing: '-0.5px' }}>Good day, {name}! 📐</div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {a?.badges?.map(b => (
-                <div key={b.badge_type} title={BADGE_INFO[b.badge_type]?.label ?? b.badge_type} style={{ fontSize: 24 }}>
-                  {BADGE_INFO[b.badge_type]?.icon ?? '🏅'}
-                </div>
-              ))}
-              {a?.streak ? <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>🔥 {a.streak}d</div> : null}
-            </div>
-          </div>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* Stat tiles */}
-          <div className="neo-stats-grid" style={{ marginBottom: 24, border: '3px solid #0a0a0a', boxShadow: '6px 6px 0 #0a0a0a' }}>
+          {/* STAT TILES */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {[
-              { val: isLoading ? '…' : String(a?.totalQuestions ?? 0), lbl: 'Questions done', color: 'yellow', ico: '📝' },
-              { val: isLoading ? '…' : a?.accuracy != null ? `${a.accuracy}%` : '—', lbl: 'Overall accuracy', color: 'lime', ico: '🎯' },
-              { val: isLoading ? '…' : String(a?.mistakes ?? 0), lbl: 'In mistake book', color: 'coral', ico: '❌' },
-              { val: isLoading ? '…' : String(a?.dueFlashcards ?? 0), lbl: 'Cards due today', color: 'sky', ico: '📚' },
+              { val: isLoading ? '…' : String(a?.totalQuestions ?? 0), lbl: 'Questions done', sub: `${a?.totalAttempts ?? 0} sessions`, glow: 'var(--yellow)', icon: '📝' },
+              { val: isLoading ? '…' : a?.accuracy != null ? `${a.accuracy}%` : '—', lbl: 'Overall accuracy', sub: `${a?.totalWrong ?? 0} wrong answers`, glow: 'var(--lime)', icon: '🎯' },
+              { val: isLoading ? '…' : String(a?.mistakes ?? 0), lbl: 'Active mistakes', sub: 'in notebook', glow: 'var(--coral)', icon: '❌', link: '/mistakes' },
+              { val: isLoading ? '…' : `${a?.streak ?? 0}d`, lbl: 'Current streak', sub: a?.streak ? 'keep going! 🔥' : 'start practicing', glow: 'var(--orange)', icon: '🔥' },
             ].map((s, i) => (
-              <div key={i} className={`neo-stat-tile ${s.color}`}>
-                <div className="neo-stat-ico">{s.ico}</div>
-                <div className="neo-stat-lbl">{s.lbl}</div>
-                <div className="neo-stat-val">{s.val}</div>
+              <div key={i} className="stat-card" style={{ cursor: s.link ? 'pointer' : 'default' }} onClick={() => s.link && router.push(s.link)}>
+                <div className="stat-card-glow" style={{ background: s.glow }} />
+                <div style={{ fontSize: 24, marginBottom: 10 }}>{s.icon}</div>
+                <div className="stat-card-val" style={{ color: s.glow }}>{s.val}</div>
+                <div className="stat-card-lbl">{s.lbl}</div>
+                <div className="stat-card-sub">{s.sub}</div>
               </div>
             ))}
           </div>
 
-          {/* Main grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-            {/* Books */}
-            <div>
-              <div className="neo-sec-head"><div className="neo-sec-title">Practice Bank</div><Link href="/" style={{ fontFamily: 'Space Mono,monospace', fontSize: 11, fontWeight: 700, color: '#666' }}>All →</Link></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {books.slice(0, 4).map(b => (
+          {/* MAIN GRID */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+            {/* Chapter accuracy */}
+            <div className="glass-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Chapter Accuracy</div>
+                <Link href="/mistakes" style={{ fontSize: 11, color: 'var(--yellow)', fontWeight: 600 }}>Full analysis →</Link>
+              </div>
+              {isLoading || !a?.chapterAccuracy?.length ? (
+                <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--faint)', fontSize: 13 }}>Practice to see accuracy</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {a.chapterAccuracy.slice(0, 6).map(c => (
+                    <div key={c.id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{c.title}</div>
+                          <div style={{ fontSize: 10, color: 'var(--faint)' }}>{c.bookTitle} · {c.total}Q</div>
+                        </div>
+                        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700, color: scoreColor(c.accuracy) }}>{c.accuracy}%</span>
+                      </div>
+                      <div className="progress-track">
+                        <div className="progress-fill" style={{ width: `${c.accuracy}%`, background: scoreColor(c.accuracy) }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 7-day activity */}
+            <div className="glass-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>7-day Activity</div>
+                <span className="badge badge-yellow">{a?.streak ?? 0} day streak</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', height: 100, marginBottom: 8 }}>
+                {days7.map(d => (
+                  <div key={d.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                      <div style={{ background: d.count > 0 ? 'var(--yellow)' : 'var(--surface3)', borderRadius: 4, height: `${Math.max(4, (d.count / maxDay) * 80)}px`, opacity: d.count > 0 ? 1 : 0.4, transition: 'height 0.5s', position: 'relative', overflow: 'hidden' }}>
+                        {d.count > 0 && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)' }} />}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 9, color: 'var(--faint)', fontWeight: 600 }}>{d.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                {[
+                  { lbl: 'Total Q', val: days7.reduce((s,d)=>s+d.count,0) },
+                  { lbl: 'Correct', val: days7.reduce((s,d)=>s+d.correct,0) },
+                  { lbl: 'Acc %', val: days7.reduce((s,d)=>s+d.count,0) > 0 ? `${Math.round((days7.reduce((s,d)=>s+d.correct,0)/days7.reduce((s,d)=>s+d.count,0))*100)}%` : '—' },
+                ].map(m => (
+                  <div key={m.lbl} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', fontFamily: 'JetBrains Mono, monospace' }}>{m.val}</div>
+                    <div style={{ fontSize: 10, color: 'var(--faint)', marginTop: 2 }}>{m.lbl}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* BOOKS */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Practice Bank</div>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>{books.length} books</span>
+            </div>
+            {books.length === 0 ? (
+              <div className="glass-card" style={{ textAlign: 'center', padding: '40px', color: 'var(--faint)' }}>
+                No books yet — add via Admin
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+                {books.map((b, i) => (
                   <Link key={b.id} href={`/books/${b.slug}`}>
-                    <div className="neo-book-tile">
-                      <div className="neo-book-spine" style={{ background: bColor(b.slug) }}>{bShort(b.title)}</div>
-                      <div className="neo-book-name">{b.title}</div>
-                      <div className="neo-book-tag">Practice →</div>
+                    <div style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', border: '1px solid var(--border)', background: 'var(--surface)' }}
+                      onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 16px 40px rgba(0,0,0,0.4)'; }}
+                      onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(0)'; el.style.boxShadow = 'none'; }}>
+                      <div style={{ height: 80, background: BOOK_GRADIENTS[i % BOOK_GRADIENTS.length], position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: 28, fontWeight: 700, color: 'rgba(0,0,0,0.2)' }}>
+                          {b.title.slice(0, 3).toUpperCase()}
+                        </div>
+                      </div>
+                      <div style={{ padding: '12px 14px' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{b.title}</div>
+                        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{b.subject ?? 'Practice'} →</div>
+                      </div>
                     </div>
                   </Link>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* BOTTOM ROW */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+            {/* Weak chapters */}
+            <div className="glass-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Weakest Chapters</div>
+                <Link href="/mistakes" className="badge badge-coral" style={{ padding: '4px 10px', fontSize: 11 }}>Notebook →</Link>
+              </div>
+              {!a?.topMistakeChapters?.length ? (
+                <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--faint)', fontSize: 13 }}>No mistakes yet 🎉</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  {a.topMistakeChapters.map((c, i) => (
+                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < a.topMistakeChapters.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 'var(--r-sm)', background: 'rgba(248,113,113,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--coral)' }}>{i + 1}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{c.title}</div>
+                        <div style={{ fontSize: 10, color: 'var(--faint)' }}>{c.bookTitle}</div>
+                      </div>
+                      <span className="badge badge-coral" style={{ fontFamily: 'JetBrains Mono, monospace' }}>✗ {c.count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Chapter accuracy heatmap */}
-            <div>
-              <div className="neo-sec-head"><div className="neo-sec-title">Chapter Accuracy</div></div>
-              {isLoading ? (
-                <div style={{ background: '#fafafa', border: '3px solid #0a0a0a', padding: 24, textAlign: 'center', fontFamily: 'Space Mono,monospace', fontSize: 12, color: '#999' }}>Loading…</div>
-              ) : !a?.chapterAccuracy?.length ? (
-                <div style={{ background: '#fafafa', border: '3px solid #0a0a0a', padding: 24, textAlign: 'center', fontFamily: 'Space Mono,monospace', fontSize: 12, color: '#999' }}>Practice first to see accuracy</div>
+            {/* Recent sessions */}
+            <div className="glass-card">
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Recent Sessions</div>
+              {!a?.recentAttempts?.length ? (
+                <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--faint)', fontSize: 13 }}>No sessions yet — start practicing!</div>
               ) : (
-                <div style={{ border: '3px solid #0a0a0a', boxShadow: '4px 4px 0 #0a0a0a', overflow: 'hidden', background: '#fff' }}>
-                  {a.chapterAccuracy.slice(0, 6).map((c, i, arr) => (
-                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: i < arr.length - 1 ? '2px solid #eee' : 'none' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600 }}>{c.title}</div>
-                        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, color: '#999' }}>{c.bookTitle} · {c.total} Q</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  {a.recentAttempts.slice(0, 6).map((att, i, arr) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <div>
+                        <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>{new Date(att.completed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                        <div style={{ fontSize: 10, color: 'var(--faint)', marginTop: 2 }}>Practice session</div>
                       </div>
-                      <div style={{ width: 100, height: 8, background: '#f0f0f0', border: '1px solid #ddd' }}>
-                        <div style={{ height: '100%', width: `${c.accuracy}%`, background: c.accuracy >= 75 ? '#b8f72b' : c.accuracy >= 50 ? '#f5d90a' : '#ff4d4d', transition: 'width 0.5s' }} />
-                      </div>
-                      <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 13, fontWeight: 700, width: 40, textAlign: 'right', color: c.accuracy >= 75 ? '#0a0a0a' : c.accuracy >= 50 ? '#0a0a0a' : '#ff4d4d' }}>{c.accuracy}%</div>
+                      <span className={`score-pill ${scoreBadgeClass(att.score)}`} style={{ border: '1px solid currentColor' }}>{att.score}%</span>
                     </div>
                   ))}
                 </div>
@@ -176,65 +271,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Bottom row: mistakes + recent + week */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            {/* Top mistake chapters */}
-            <div>
-              <div className="neo-sec-head">
-                <div className="neo-sec-title">Weak Chapters</div>
-                <Link href="/mistakes" style={{ fontFamily: 'Space Mono,monospace', fontSize: 11, fontWeight: 700, color: '#ff4d4d' }}>Notebook →</Link>
-              </div>
-              {!a?.topMistakeChapters?.length ? (
-                <div style={{ background: '#fafafa', border: '3px solid #0a0a0a', padding: 16, fontFamily: 'Space Mono,monospace', fontSize: 11, color: '#999', textAlign: 'center' }}>No mistakes yet!</div>
-              ) : (
-                <div style={{ border: '3px solid #0a0a0a', overflow: 'hidden', background: '#fff' }}>
-                  {a.topMistakeChapters.map((c, i, arr) => (
-                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: i < arr.length - 1 ? '2px solid #eee' : 'none' }}>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{c.title}</div>
-                      <div style={{ background: '#ff4d4d', border: '2px solid #0a0a0a', padding: '1px 8px', fontFamily: 'Space Mono,monospace', fontSize: 11, fontWeight: 700, color: '#fff' }}>✗ {c.count}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Recent attempts */}
-            <div>
-              <div className="neo-sec-head"><div className="neo-sec-title">Recent</div></div>
-              {!a?.recentAttempts?.length ? (
-                <div style={{ background: '#fafafa', border: '3px solid #0a0a0a', padding: 16, fontFamily: 'Space Mono,monospace', fontSize: 11, color: '#999', textAlign: 'center' }}>No attempts yet</div>
-              ) : (
-                <div style={{ border: '3px solid #0a0a0a', overflow: 'hidden', background: '#fff' }}>
-                  {a.recentAttempts.slice(0, 5).map((att, i, arr) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: i < arr.length - 1 ? '2px solid #eee' : 'none' }}>
-                      <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 11, color: '#999' }}>{new Date(att.completed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
-                      <div className="neo-score-badge" style={{ background: bgScore(att.score), color: tcScore(att.score) }}>{att.score}%</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Week calendar */}
-            <div>
-              <div className="neo-sec-head"><div className="neo-sec-title">This Week</div><div style={{ fontFamily: 'Space Mono,monospace', fontSize: 11, color: '#777' }}>🔥 {a?.streak ?? 0}d streak</div></div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 0, border: '3px solid #0a0a0a', overflow: 'hidden' }}>
-                {days.map((d, i) => {
-                  const todayDay = (new Date().getDay() + 6) % 7;
-                  const done = i < todayDay; const today = i === todayDay;
-                  return (
-                    <div key={d} style={{ textAlign: 'center', padding: '10px 4px', borderRight: i < 6 ? '2px solid #eee' : 'none', background: today ? '#f5d90a' : done ? '#0a0a0a' : '#fafafa' }}>
-                      <div style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', color: today ? '#0a0a0a' : done ? '#f5d90a' : '#bbb', marginBottom: 6 }}>{d}</div>
-                      <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 12, fontWeight: 700, color: today ? '#0a0a0a' : done ? '#fff' : '#ddd' }}>{done ? '✓' : today ? '●' : '○'}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                <Link href="/mistakes" className="neu-btn" style={{ flex: 1, justifyContent: 'center', fontSize: 12, padding: '8px', background: '#ff4d4d', color: '#fff' }}>Mistake Book</Link>
-                <Link href="/flashcards" className="neu-btn" style={{ flex: 1, justifyContent: 'center', fontSize: 12, padding: '8px', background: '#3d9eff', color: '#fff' }}>Flashcards</Link>
-              </div>
-            </div>
+          {/* QUICK ACTIONS */}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <Link href="/mistakes" className="btn-ghost" style={{ fontSize: 13 }}>📕 Mistake Notebook</Link>
+            <Link href="/flashcards" className="btn-ghost" style={{ fontSize: 13 }}>📚 Flashcards {a?.dueFlashcards ? `(${a.dueFlashcards} due)` : ''}</Link>
+            <Link href="/diagram" className="btn-ghost" style={{ fontSize: 13 }}>△ Diagram Lab</Link>
+            {isAdmin && <Link href="/admin" className="btn-ghost" style={{ fontSize: 13 }}>⚙ Admin</Link>}
           </div>
         </div>
       </div>

@@ -1,165 +1,152 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Navigation } from '@/components/navigation';
-import Link from 'next/link';
 
-const CIRCUIT_TEMPLATES = [
-  { name: 'RC Circuit', desc: 'Resistor + Capacitor in series', url: 'https://www.falstad.com/circuit/circuitjs.html?ctz=CQAgjCAMB0l3BWcMBMcUHYMGZIA2ATmIxAUgoqoQFMBaMMAKADcQaWKV8BeS27xHD5eOKCEoB3dhFJi+UmUICGIAGYBXAE4AXbgHc5OgmODCFSGVBbJqQvQDsIACyMBjNiTZjU1EAA2AG5nSQ0HZ2EgA' },
-  { name: 'LCR Circuit', desc: 'Inductor, Capacitor, Resistor', url: 'https://www.falstad.com/circuit/circuitjs.html' },
-  { name: 'Wheatstone Bridge', desc: 'Classic bridge circuit', url: 'https://www.falstad.com/circuit/circuitjs.html' },
-  { name: 'Blank Canvas', desc: 'Start from scratch', url: 'https://www.falstad.com/circuit/circuitjs.html' },
-];
-
-const PHET_SIMS = [
-  { name: 'Circuit Construction Kit', subject: 'Physics', url: 'https://phet.colorado.edu/sims/html/circuit-construction-kit-dc/latest/circuit-construction-kit-dc_en.html', color: '#3d9eff' },
-  { name: 'Wave on a String', subject: 'Physics', url: 'https://phet.colorado.edu/sims/html/wave-on-a-string/latest/wave-on-a-string_en.html', color: '#3d9eff' },
-  { name: 'Projectile Motion', subject: 'Physics', url: 'https://phet.colorado.edu/sims/html/projectile-motion/latest/projectile-motion_en.html', color: '#3d9eff' },
-  { name: 'Acid-Base Solutions', subject: 'Chemistry', url: 'https://phet.colorado.edu/sims/html/acid-base-solutions/latest/acid-base-solutions_en.html', color: '#0fd68a' },
-  { name: 'Balancing Chemical Equations', subject: 'Chemistry', url: 'https://phet.colorado.edu/sims/html/balancing-chemical-equations/latest/balancing-chemical-equations_en.html', color: '#0fd68a' },
-  { name: 'Build an Atom', subject: 'Chemistry', url: 'https://phet.colorado.edu/sims/html/build-an-atom/latest/build-an-atom_en.html', color: '#0fd68a' },
-  { name: 'Graphing Quadratics', subject: 'Maths', url: 'https://phet.colorado.edu/sims/html/graphing-quadratics/latest/graphing-quadratics_en.html', color: '#f5d90a' },
-  { name: 'Trig Tour', subject: 'Maths', url: 'https://phet.colorado.edu/sims/html/trig-tour/latest/trig-tour_en.html', color: '#f5d90a' },
-];
+// Diagram tool categories
+const TOOLS = {
+  circuit: [
+    { name: 'Falstad Circuit Simulator', desc: 'Build & simulate electrical circuits', url: 'https://www.falstad.com/circuit/circuitjs.html', icon: '⚡' },
+    { name: 'Circuit Sandbox', desc: 'Simple circuit builder', url: 'https://circuitsandbox.net/', icon: '🔌' },
+  ],
+  graph: [
+    { name: 'Desmos Graphing', desc: 'Plot any mathematical function', url: 'https://www.desmos.com/calculator', icon: '📈' },
+    { name: 'Desmos 3D', desc: '3D surface and parametric plots', url: 'https://www.desmos.com/3d', icon: '🧊' },
+    { name: 'Desmos Geometry', desc: 'Geometric constructions', url: 'https://www.desmos.com/geometry', icon: '△' },
+    { name: 'GeoGebra', desc: 'Advanced math & science diagrams', url: 'https://www.geogebra.org/geometry', icon: '⊙' },
+  ],
+  phet: [
+    { name: 'DC Circuits', desc: 'Build & test circuits', url: 'https://phet.colorado.edu/sims/html/circuit-construction-kit-dc/latest/circuit-construction-kit-dc_en.html', icon: '💡', subject: 'Physics' },
+    { name: 'Wave on a String', desc: 'Wave properties & interference', url: 'https://phet.colorado.edu/sims/html/wave-on-a-string/latest/wave-on-a-string_en.html', icon: '〰', subject: 'Physics' },
+    { name: 'Projectile Motion', desc: 'Trajectory & kinematics', url: 'https://phet.colorado.edu/sims/html/projectile-motion/latest/projectile-motion_en.html', icon: '🎯', subject: 'Physics' },
+    { name: 'Coulomb\'s Law', desc: 'Electric force between charges', url: 'https://phet.colorado.edu/sims/html/coulombs-law/latest/coulombs-law_en.html', icon: '⊕', subject: 'Physics' },
+    { name: 'Acid-Base Solutions', desc: 'pH and equilibrium', url: 'https://phet.colorado.edu/sims/html/acid-base-solutions/latest/acid-base-solutions_en.html', icon: '🧪', subject: 'Chemistry' },
+    { name: 'Balancing Equations', desc: 'Chemical equation balancing', url: 'https://phet.colorado.edu/sims/html/balancing-chemical-equations/latest/balancing-chemical-equations_en.html', icon: '⚖', subject: 'Chemistry' },
+    { name: 'Build an Atom', desc: 'Atomic structure builder', url: 'https://phet.colorado.edu/sims/html/build-an-atom/latest/build-an-atom_en.html', icon: '⚛', subject: 'Chemistry' },
+    { name: 'Graphing Quadratics', desc: 'Parabola explorer', url: 'https://phet.colorado.edu/sims/html/graphing-quadratics/latest/graphing-quadratics_en.html', icon: '∪', subject: 'Maths' },
+    { name: 'Trig Tour', desc: 'Unit circle & trig functions', url: 'https://phet.colorado.edu/sims/html/trig-tour/latest/trig-tour_en.html', icon: '🔄', subject: 'Maths' },
+  ],
+  draw: [
+    { name: 'Excalidraw', desc: 'Sketch diagrams for physics problems (electric field lines, free body, ray diagrams)', url: 'https://excalidraw.com/', icon: '✏', embed: true },
+    { name: 'tldraw', desc: 'Infinite canvas for drawing & diagramming', url: 'https://www.tldraw.com/', icon: '🖊' },
+    { name: 'Draw.io', desc: 'Professional diagram editor', url: 'https://app.diagrams.net/', icon: '◻' },
+  ],
+};
 
 export default function DiagramPage() {
-  const [activeTab, setActiveTab] = useState<'circuit' | 'phet' | 'desmos'>('circuit');
-  const [activeUrl, setActiveUrl] = useState(CIRCUIT_TEMPLATES[3].url);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [activeTab, setActiveTab] = useState<'draw' | 'circuit' | 'graph' | 'phet'>('draw');
+  const [activeUrl, setActiveUrl] = useState(TOOLS.draw[0].url);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [subjectFilter, setSubjectFilter] = useState('All');
 
-  const SUBJ_COLORS: Record<string, string> = { Physics: '#3d9eff', Chemistry: '#0fd68a', Maths: '#f5d90a' };
+  const tabs = [
+    { key: 'draw', label: '✏ Draw', desc: 'Sketch question diagrams' },
+    { key: 'circuit', label: '⚡ Circuit', desc: 'Simulate circuits' },
+    { key: 'graph', label: '📈 Graph', desc: 'Plot functions' },
+    { key: 'phet', label: '🔬 PhET Sims', desc: 'Interactive simulations' },
+  ] as const;
+
+  const currentTools = TOOLS[activeTab] ?? [];
+  const filtered = activeTab === 'phet' && subjectFilter !== 'All'
+    ? (currentTools as any[]).filter(t => t.subject === subjectFilter)
+    : currentTools;
 
   return (
-    <div className="neo-shell">
+    <div className="app-shell">
       <Navigation />
-      <div className="neo-main" style={{ display: 'flex', flexDirection: 'column' }}>
-        <div className="neo-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 3, height: 22, background: '#3d9eff' }} />
-            <span className="neo-topbar-title">Lab & Diagrams</span>
+      <div className="main-area" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="topbar">
+          <div>
+            <div className="topbar-title">Diagram Lab</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1 }}>Draw physics diagrams, simulate circuits, plot graphs</div>
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {(['circuit', 'phet', 'desmos'] as const).map(t => (
-              <button key={t} onClick={() => setActiveTab(t)} className={`neo-chip ${activeTab === t ? 'active' : ''}`} style={{ fontSize: 11, textTransform: 'uppercase' }}>
-                {t === 'circuit' ? '⚡ Circuit' : t === 'phet' ? '🔬 PhET Sims' : '📈 Desmos'}
-              </button>
-            ))}
+          <div className="topbar-right">
+            <button onClick={() => setFullscreen(!fullscreen)} className="btn-ghost" style={{ fontSize: 12 }}>
+              {fullscreen ? '⊡ Show Panel' : '⊞ Fullscreen'}
+            </button>
+            <a href={activeUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ fontSize: 12 }}>↗ Open new tab</a>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 'calc(100vh - 60px)' }}>
+        {/* Tab bar */}
+        <div style={{ display: 'flex', gap: 4, padding: '12px 20px', background: 'var(--surface)', borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
+          {tabs.map(t => (
+            <button key={t.key} onClick={() => { setActiveTab(t.key); setActiveUrl(TOOLS[t.key][0].url); }}
+              className={`chip ${activeTab === t.key ? 'active' : ''}`} style={{ whiteSpace: 'nowrap', padding: '7px 16px' }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
           {/* Sidebar */}
-          {!isFullscreen && (
-            <div style={{ width: 220, background: '#fafafa', borderRight: '3px solid #0a0a0a', overflow: 'y', display: 'flex', flexDirection: 'column' }}>
-              {activeTab === 'circuit' && (
-                <div style={{ padding: 14 }}>
-                  <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: 12 }}>// TEMPLATES</div>
-                  {CIRCUIT_TEMPLATES.map((t, i) => (
-                    <button key={i} onClick={() => setActiveUrl(t.url)} style={{
-                      width: '100%', padding: '10px 12px', marginBottom: 6, textAlign: 'left',
-                      background: activeUrl === t.url ? '#f5d90a' : '#fff',
-                      border: `2px solid ${activeUrl === t.url ? '#0a0a0a' : '#ddd'}`,
-                      boxShadow: activeUrl === t.url ? '2px 2px 0 #0a0a0a' : 'none',
-                      cursor: 'pointer', transition: 'all 0.1s',
-                    }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{t.name}</div>
-                      <div style={{ fontSize: 10, color: '#777' }}>{t.desc}</div>
-                    </button>
-                  ))}
-                  <div style={{ marginTop: 16, padding: '12px', background: '#111', border: '2px solid #333' }}>
-                    <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, color: '#f5d90a', fontWeight: 700, marginBottom: 8 }}>CIRCUIT TIPS</div>
-                    {[
-                      'R = drag resistor from menu',
-                      'W = wire tool',
-                      'Right-click = component properties',
-                      'Space = pause/play simulation',
-                    ].map((tip, i) => (
-                      <div key={i} style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>• {tip}</div>
-                    ))}
-                  </div>
+          {!fullscreen && (
+            <div style={{ width: 240, background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {/* Description */}
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
+                <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>
+                  {activeTab === 'draw' && '✏ Draw electric field lines, free-body diagrams, ray diagrams, and physics problem sketches.'}
+                  {activeTab === 'circuit' && '⚡ Build and simulate electrical circuits with resistors, capacitors, and inductors.'}
+                  {activeTab === 'graph' && '📈 Plot mathematical functions, parametric equations, and geometric constructions.'}
+                  {activeTab === 'phet' && '🔬 Interactive physics & chemistry simulations from University of Colorado.'}
                 </div>
-              )}
+              </div>
 
               {activeTab === 'phet' && (
-                <div style={{ padding: 14, overflowY: 'auto' }}>
-                  <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: 12 }}>// SIMULATIONS</div>
-                  {['Physics', 'Chemistry', 'Maths'].map(subj => (
-                    <div key={subj} style={{ marginBottom: 16 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                        <div style={{ width: 8, height: 8, background: SUBJ_COLORS[subj] }} />
-                        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, fontWeight: 700, color: '#777', textTransform: 'uppercase' }}>{subj}</div>
-                      </div>
-                      {PHET_SIMS.filter(s => s.subject === subj).map((s, i) => (
-                        <button key={i} onClick={() => setActiveUrl(s.url)} style={{
-                          width: '100%', padding: '8px 10px', marginBottom: 5, textAlign: 'left',
-                          background: activeUrl === s.url ? SUBJ_COLORS[subj] : '#fff',
-                          border: `2px solid ${activeUrl === s.url ? '#0a0a0a' : '#ddd'}`,
-                          boxShadow: activeUrl === s.url ? '2px 2px 0 #0a0a0a' : 'none',
-                          cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                        }}>
-                          {s.name}
-                        </button>
-                      ))}
-                    </div>
+                <div style={{ display: 'flex', gap: 4, padding: '10px 12px', flexWrap: 'wrap', borderBottom: '1px solid var(--border)' }}>
+                  {['All', 'Physics', 'Chemistry', 'Maths'].map(s => (
+                    <button key={s} onClick={() => setSubjectFilter(s)} className={`chip ${subjectFilter === s ? 'active' : ''}`} style={{ fontSize: 10, padding: '4px 10px' }}>{s}</button>
                   ))}
                 </div>
               )}
 
-              {activeTab === 'desmos' && (
-                <div style={{ padding: 14 }}>
-                  <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: 12 }}>// GRAPHING TOOLS</div>
-                  {[
-                    { name: 'Graphing Calculator', url: 'https://www.desmos.com/calculator', desc: 'Plot any function' },
-                    { name: 'Geometry', url: 'https://www.desmos.com/geometry', desc: 'Draw geometric shapes' },
-                    { name: '3D Calculator', url: 'https://www.desmos.com/3d', desc: '3D surface plots' },
-                    { name: 'Scientific Calculator', url: 'https://www.desmos.com/scientific', desc: 'Advanced calculator' },
-                  ].map((t, i) => (
-                    <button key={i} onClick={() => setActiveUrl(t.url)} style={{
-                      width: '100%', padding: '10px 12px', marginBottom: 6, textAlign: 'left',
-                      background: activeUrl === t.url ? '#f5d90a' : '#fff',
-                      border: `2px solid ${activeUrl === t.url ? '#0a0a0a' : '#ddd'}`,
-                      boxShadow: activeUrl === t.url ? '2px 2px 0 #0a0a0a' : 'none',
-                      cursor: 'pointer',
-                    }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{t.name}</div>
-                      <div style={{ fontSize: 10, color: '#777' }}>{t.desc}</div>
-                    </button>
-                  ))}
-                  <div style={{ marginTop: 14, padding: 12, background: '#111', border: '2px solid #333' }}>
-                    <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, color: '#f5d90a', fontWeight: 700, marginBottom: 6 }}>DESMOS TIPS</div>
-                    <div style={{ fontSize: 10, color: '#666', lineHeight: 1.7 }}>
-                      Type <span style={{ color: '#f5d90a' }}>sin(x)</span>, <span style={{ color: '#f5d90a' }}>x^2</span>, <span style={{ color: '#f5d90a' }}>|x|</span><br />
-                      Use sliders with <span style={{ color: '#f5d90a' }}>a=1</span><br />
-                      Implicit curves: <span style={{ color: '#f5d90a' }}>x^2+y^2=1</span>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                {filtered.map((tool: any, i: number) => (
+                  <button key={i} onClick={() => setActiveUrl(tool.url)} style={{
+                    width: '100%', padding: '10px 12px', marginBottom: 4, textAlign: 'left',
+                    background: activeUrl === tool.url ? 'rgba(245,200,66,0.1)' : 'transparent',
+                    border: `1px solid ${activeUrl === tool.url ? 'rgba(245,200,66,0.3)' : 'transparent'}`,
+                    borderRadius: 'var(--r-md)', cursor: 'pointer', transition: 'all 0.12s',
+                  }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>{tool.icon}</span>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: activeUrl === tool.url ? 'var(--yellow)' : 'var(--text)', marginBottom: 2 }}>{tool.name}</div>
+                        <div style={{ fontSize: 10, color: 'var(--faint)', lineHeight: 1.5 }}>{tool.desc}</div>
+                        {tool.subject && <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{tool.subject}</div>}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tips */}
+              <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border)', background: 'rgba(245,200,66,0.04)' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--yellow)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>💡 JEE Diagram Tips</div>
+                {activeTab === 'draw' && [
+                  'Use Excalidraw for electric field lines',
+                  'Draw free-body diagrams for mechanics',
+                  'Sketch ray diagrams for optics',
+                  'Use shapes library for quick diagrams',
+                ].map((tip, i) => <div key={i} style={{ fontSize: 10, color: 'var(--faint)', marginBottom: 3 }}>• {tip}</div>)}
+                {activeTab === 'circuit' && [
+                  'R = resistor, C = capacitor, L = inductor',
+                  'Right-click component to edit values',
+                  'Space = pause simulation',
+                  'Check voltage/current probes',
+                ].map((tip, i) => <div key={i} style={{ fontSize: 10, color: 'var(--faint)', marginBottom: 3 }}>• {tip}</div>)}
+                {activeTab === 'graph' && [
+                  'Type sin(x), cos(x), tan(x) directly',
+                  'Use sliders: type a=1 for a slider',
+                  'Implicit: x^2 + y^2 = r^2 for circle',
+                  'Derivative: d/dx f(x)',
+                ].map((tip, i) => <div key={i} style={{ fontSize: 10, color: 'var(--faint)', marginBottom: 3 }}>• {tip}</div>)}
+              </div>
             </div>
           )}
 
-          {/* Main iframe area */}
-          <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-            {/* Toolbar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: '#0a0a0a', borderBottom: '2px solid #222' }}>
-              <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 11, color: '#555', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {activeUrl}
-              </div>
-              <button onClick={() => setIsFullscreen(!isFullscreen)} style={{ padding: '5px 12px', background: isFullscreen ? '#f5d90a' : '#222', color: isFullscreen ? '#0a0a0a' : '#777', border: `2px solid ${isFullscreen ? '#f5d90a' : '#444'}`, cursor: 'pointer', fontFamily: 'Space Mono,monospace', fontSize: 11, fontWeight: 700 }}>
-                {isFullscreen ? '⊡ PANEL' : '⊞ FULL'}
-              </button>
-              <a href={activeUrl} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 12px', background: '#222', color: '#777', border: '2px solid #444', cursor: 'pointer', fontFamily: 'Space Mono,monospace', fontSize: 11, fontWeight: 700, textDecoration: 'none' }}>
-                ↗ OPEN
-              </a>
-            </div>
-
-            <iframe
-              ref={iframeRef}
-              src={activeUrl}
-              style={{ flex: 1, border: 'none', width: '100%' }}
-              allow="fullscreen"
-              title="Lab tool"
-            />
+          {/* Main iframe */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', minWidth: 0 }}>
+            <iframe key={activeUrl} src={activeUrl} style={{ flex: 1, border: 'none', width: '100%', minHeight: 0 }} allow="fullscreen clipboard-read clipboard-write" title="Diagram tool" />
           </div>
         </div>
       </div>
